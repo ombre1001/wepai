@@ -18,7 +18,7 @@ public class UserController {
     private UserService userService;
 
 
-    private static final String DEFAULT_JWT_KEY = "key";
+    static final String DEFAULT_JWT_KEY = "key";
 
 
 
@@ -34,6 +34,7 @@ public class UserController {
         String casId = getUserIdFromToken(request);
         return userService.updateProfile(casId, updateDTO);
     }
+
 
     private String getUserIdFromToken(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");

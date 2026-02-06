@@ -21,8 +21,17 @@ public interface UserMapper extends BaseMapper<User> {
     String getUserId(String name);
 
 
-    @Update("UPDATE user SET name = #{user.username}, email = #{user.email}, phone = #{user.phone} WHERE cas_id = #{user.casId}")
+    @Update("UPDATE user SET " +
+            "nickname = #{user.nickname}, " +
+            "avatar_url = #{user.avatarUrl}, " +
+            "sex = #{user.sex}, " +
+            "phone = #{user.phone}, " +
+            "detail = #{user.detail} " +
+            "WHERE cas_id = #{user.casId}")
     int updateUser(@Param("user") User user);
+
+    @Update("UPDATE user SET role = #{role} WHERE cas_id = #{casId}")
+    int updateUserRole(@Param("casId") String casId, @Param("role") Integer role);
 
 
 

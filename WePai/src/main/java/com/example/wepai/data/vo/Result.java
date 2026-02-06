@@ -42,6 +42,9 @@ public class Result {
         return build(new Result(code, null, msg));
     }
 
+    public static ResponseEntity<Result> error(String s) { return build(new Result(400, null, s));
+    }
+
 
     /**
      * 获取 HTTP 状态码

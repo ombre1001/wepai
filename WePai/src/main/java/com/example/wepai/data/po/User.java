@@ -4,11 +4,13 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
+@Builder
 @AllArgsConstructor
 @TableName("user")
 public class User {
@@ -21,4 +23,9 @@ public class User {
      private Integer sex;
      private String phone;
      private String detail;
+    public User(String casId, String name) {
+        this.casId = casId;
+        this.name = name;
+    }
+
 }
