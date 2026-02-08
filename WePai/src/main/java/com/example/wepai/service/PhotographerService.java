@@ -23,14 +23,25 @@ public class PhotographerService {
 
     // 获取评分和接单量
     public ResponseEntity<Result> getPerformance(String casId) {
-        Double avgScore = photographerMapper.getAverageScore(casId);
-        Photographer info = photographerMapper.getPhotographerById(casId);
+        try {
+            // 获取平均分
+            Double avgScore = photographerMapper.getAverageScore(casId);
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("averageScore", avgScore != null ? avgScore : 0.0);
-        data.put("orderCount", info != null ? info.getOrderCount() : 0);
+            // 获取摄影师扩展信息（包含实时计算的 orderCount）
+            Photographer info = photographerMapper.getPhotographerById(casId);
 
-        return Result.success(data, "获取评分和接单量成功");
+            Map<String, Object> data = new HashMap<>();
+            // 处理 null 情况
+            data.put("averageScore", avgScore != null ? avgScore : 0.0);
+
+            // 如果 info 为空（该用户还没入驻），则接单量为 0
+            data.put("orderCount", info != null ? info.getOrderCount() : 0);
+
+            return Result.success(data, "获取评分和接单量成功");
+        } catch (Exception e) {
+            e.printStackTrace(); // 在控制台打印详细报错
+            return Result.error("获取性能数据失败: " + e.getMessage());
+        }
     }
 
     // 获取摄影师独特属性
@@ -75,7 +86,7 @@ public class PhotographerService {
                 Photographer newInfo = new Photographer();
                 newInfo.setCasId(casId);
                 newInfo.setOrderCount(0);
-                photographerMapper.insertPhotographer(newInfo);
+                photographerMapper.upsertPhotographer(newInfo);
             }
 
             return Result.success(null, "恭喜，入驻成功！已获得摄影师权限。");

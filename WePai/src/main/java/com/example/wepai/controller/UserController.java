@@ -18,7 +18,7 @@ public class UserController {
     private UserService userService;
 
 
-    static final String DEFAULT_JWT_KEY = "key";
+    static final String DEFAULT_JWT_KEY = ">U@Oa@U7Xew3!E.TQs*TD)P*7nWktUz(m=ar!k&6{QYcLTGLc+W8|u2#VYX8S6<:";
 
 
 

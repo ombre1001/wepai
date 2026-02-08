@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import static com.example.wepai.controller.UserController.DEFAULT_JWT_KEY;
 
 // PhotographerController.java
+@CrossOrigin
 @RestController
 @RequestMapping("/photographer")
 public class PhotographerController {

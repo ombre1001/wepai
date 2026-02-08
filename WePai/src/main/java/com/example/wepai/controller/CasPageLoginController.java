@@ -3,8 +3,8 @@ package com.example.wepai.controller;
 import com.example.wepai.data.po.CasPageLogin;
 import com.example.wepai.data.po.User;
 import com.example.wepai.utils.JwtUtil;
-import com.example.wepai.mapper.UserMapper;
 import jakarta.annotation.Resource;
+import com.example.wepai.mapper.UserMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.SneakyThrows;
 import org.springframework.stereotype.Controller;
@@ -27,10 +27,12 @@ public class CasPageLoginController {
 
     public static final HashMap<String, String> allowApiTable = new HashMap<>();
 
+
     static {
         // 跳转站点api - 站点密钥key
         allowApiTable.put("http://127.0.0.1:8080/login", "key");
-        //allowApiTable.put("https://i.sdu.edu.cn/cas/proxy/login", "key1");  // 统一认证页面方式登入后端示例api
+        allowApiTable.put("https://i.sdu.edu.cn/index.html", "test");
+        allowApiTable.put("https://www.h10eaea4e.nyat.app:48561/login", ">U@Oa@U7Xew3!E.TQs*TD)P*7nWktUz(m=ar!k&6{QYcLTGLc+W8|u2#VYX8S6<:");  // 统一认证页面方式登入后端示例api
     }
 
     /**
@@ -49,7 +51,10 @@ public class CasPageLoginController {
         String key = allowApiTable.get(forward);
 
         // 如果key==null，说明该重定向网站没注册过，拒绝统一认证登入请求
-
+        if (key == null) {
+            forward = CasPageLogin.DEFAULT_FORWARD;
+            key = "";
+        }
 
         // 统一认证登入检查
         CasPageLogin.Result result = CasPageLogin.login(ticket, forward);
@@ -76,7 +81,7 @@ public class CasPageLoginController {
     @RequestMapping("/login")
     public String login(@RequestParam String token, HttpServletResponse response) {
         // 存储在服务器上的key应该和存储在服务器上的key相同
-        String key = "key";
+        String key = ">U@Oa@U7Xew3!E.TQs*TD)P*7nWktUz(m=ar!k&6{QYcLTGLc+W8|u2#VYX8S6<:";
 
         User user = JwtUtil.getClaim(token, key);
         // 如果解密token失败，那么这是一个非法的登入
@@ -86,15 +91,11 @@ public class CasPageLoginController {
         }
         // 如果解密token成功，那么这是一个合法的登入
         else {
-            if (userMapper.getUserById(user.getCasId()) == null) {
-                // 执行初始化注册
-                userMapper.insertUser(user);
-            }
             // 合法登入逻辑处理
-            String casID = URLEncoder.encode(user.getCasId(), StandardCharsets.UTF_8);
+            userMapper.insertUser(user);
+            String casId = URLEncoder.encode(user.getCasId(), StandardCharsets.UTF_8);
             String name = URLEncoder.encode(user.getName(), StandardCharsets.UTF_8);
-            response.sendRedirect("http://localhost:8080/index.html?token=" + token);
-
+            response.sendRedirect(CasPageLogin.DEFAULT_FORWARD + "?casId=" + casId + "&name=" + name + "&token=" + token );
             return null;
         }
     }

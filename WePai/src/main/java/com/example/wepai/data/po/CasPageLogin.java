@@ -22,12 +22,12 @@ public class CasPageLogin {
     /**
      * 本地接口
      */
-    public static final String LOCAL_API = "http://localhost:8080/login/page";
+    public static final String LOCAL_API = "https://i.sdu.edu.cn/cas/proxy/login/page";
 
     /**
      * 默认跳转
      */
-    public static final String DEFAULT_FORWARD = "http://localhost:8080/index.html";
+    public static final String DEFAULT_FORWARD = "https://i.sdu.edu.cn/index.html";
 
     /**
      * 执行cas登入，返回结果

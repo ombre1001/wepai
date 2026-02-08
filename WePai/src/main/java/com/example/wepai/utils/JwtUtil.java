@@ -29,12 +29,12 @@ public class JwtUtil {
     //jwt加密方式
     private static final SecureDigestAlgorithm<SecretKey,SecretKey> ALGORITHM = Jwts.SIG.HS256;
 
-    private static final String CLAIM_KEY_CAS_ID = "casId";
+    private static final String CLAIM_KEY_CAS_ID = "casID";
 
     private static final String CLAIM_KEY_NAME = "name";
 
     // 十秒过期
-    private static final long expire = 3600000;
+    private static final long expire = 360000;
 
     private static final byte[] salt = "KOISHIKISHIKAWAIIKAWAIIKISSKISSLOVELY".getBytes(StandardCharsets.UTF_8);
 
@@ -55,12 +55,12 @@ public class JwtUtil {
         return secretKey;
     }
 
-    public static String generate(String key, String casId, String name) {
+    public static String generate(String key, String casID, String name) {
         SecretKey secretKey = generateSecretKey(key);
         return Jwts.builder()
                 .header().add("type","JWT")
                 .and()
-                .claim(CLAIM_KEY_CAS_ID, casId)
+                .claim(CLAIM_KEY_CAS_ID, casID)
                 .claim(CLAIM_KEY_NAME, name)
                 .expiration(new Date(System.currentTimeMillis() + expire))
                 .signWith(secretKey,ALGORITHM)
@@ -76,12 +76,10 @@ public class JwtUtil {
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-             String casId = claims.get(CLAIM_KEY_CAS_ID, String.class);
+             String casID = claims.get(CLAIM_KEY_CAS_ID, String.class);
              String name = claims.get(CLAIM_KEY_NAME, String.class);
-             return new User(casId, name);
+             return new User(casID, name);
         } catch (JwtException | IllegalArgumentException e) {
-            System.out.println("JWT解析失败: " + e.getMessage());
-            e.printStackTrace();
             return null;
         }
     }

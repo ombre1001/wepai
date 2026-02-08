@@ -7,8 +7,7 @@ import org.apache.ibatis.annotations.*;
 @Mapper
 public interface UserMapper extends BaseMapper<User> {
 
-    @Insert("INSERT INTO user (cas_id, name) VALUES (#{casId}, #{name}) " +
-            "ON DUPLICATE KEY UPDATE name = #{name}")
+    @Insert("INSERT IGNORE INTO user (cas_id, name) VALUES (#{casId}, #{name})")
     int insertUser(User user);
 
     @Select("SELECT * FROM user WHERE cas_id = #{casId}")
