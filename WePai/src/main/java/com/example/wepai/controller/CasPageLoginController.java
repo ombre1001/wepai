@@ -93,9 +93,17 @@ public class CasPageLoginController {
         else {
             // 合法登入逻辑处理
             userMapper.insertUser(user);
+            String localLongTermToken = JwtUtil.generateLongTerm(key, user.getCasId(), user.getName());
+
+            // 4. 将本地生成的长效 Token 重定向给前端
             String casId = URLEncoder.encode(user.getCasId(), StandardCharsets.UTF_8);
             String name = URLEncoder.encode(user.getName(), StandardCharsets.UTF_8);
-            response.sendRedirect(CasPageLogin.DEFAULT_FORWARD + "?casId=" + casId + "&name=" + name + "&token=" + token );
+
+            // 注意：这里传回前端的是 localLongTermToken
+            response.sendRedirect(CasPageLogin.DEFAULT_FORWARD
+                    + "?casId=" + casId
+                    + "&name=" + name
+                    + "&token=" + localLongTermToken);
             return null;
         }
     }

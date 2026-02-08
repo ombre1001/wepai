@@ -29,7 +29,7 @@ public class UserController {
         return userService.getProfile(casId);
     }
 
-    @PutMapping("/updateProfile")
+    @PostMapping("/updateProfile")
     public ResponseEntity<Result> updateProfile(@RequestBody UserUpdateDTO updateDTO, HttpServletRequest request) {
         String casId = getUserIdFromToken(request);
         return userService.updateProfile(casId, updateDTO);
