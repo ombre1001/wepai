@@ -8,6 +8,7 @@ import com.example.wepai.mapper.UserMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.SneakyThrows;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -41,6 +42,7 @@ public class CasPageLoginController {
      * @param ticket 统一认证登入发放的ticket
      * @param forward 统一认证登入成功后的回调接口
      */
+    @CrossOrigin
     @SneakyThrows
     @RequestMapping("/login/page")
     public void casLogin(
@@ -76,6 +78,7 @@ public class CasPageLoginController {
      * 统一认证页面方式登入后端示例回调接口
      * @param token 统一认证登入页面重定向代理接口给出的token
      */
+    @CrossOrigin
     @ResponseBody
     @SneakyThrows
     @RequestMapping("/login")
@@ -100,7 +103,7 @@ public class CasPageLoginController {
             String name = URLEncoder.encode(user.getName(), StandardCharsets.UTF_8);
 
             // 注意：这里传回前端的是 localLongTermToken
-            response.sendRedirect(CasPageLogin.DEFAULT_FORWARD
+            response.sendRedirect("http://localhost:5173"
                     + "?casId=" + casId
                     + "&name=" + name
                     + "&token=" + localLongTermToken);
