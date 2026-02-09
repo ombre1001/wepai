@@ -10,6 +10,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 import static com.example.wepai.controller.UserController.DEFAULT_JWT_KEY;
 
 @RestController
@@ -33,6 +35,37 @@ public class PostController {
         return postService.getList(type);
     }
 
+    @PostMapping("/like/{postId}")
+    public ResponseEntity<Result> like(@PathVariable Long postId, HttpServletRequest request) {
+        String userId = getUserIdFromToken(request);
+        return postService.likePost(userId, postId);
+    }
+
+    // 取消点赞
+    @PostMapping("/unlike/{postId}")
+    public ResponseEntity<Result> unlike(@PathVariable Long postId, HttpServletRequest request) {
+        String userId = getUserIdFromToken(request);
+        return postService.unlikePost(userId, postId);
+    }
+
+    // 评论
+    @PostMapping("/comment")
+    public ResponseEntity<Result> comment(@RequestBody Map<String, Object> body, HttpServletRequest request) {
+        String userId = getUserIdFromToken(request);
+        if (!body.containsKey("postId") || !body.containsKey("content")) {
+            return Result.error("参数缺失");
+        }
+        Long postId = Long.valueOf(body.get("postId").toString());
+        String content = (String) body.get("content");
+        return postService.commentPost(userId, postId, content);
+    }
+
+    // 获取评论
+    @GetMapping("/comments/{postId}")
+    public ResponseEntity<Result> getComments(@PathVariable Long postId) {
+        return postService.getPostComments(postId);
+    }
+
     private String getUserIdFromToken(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
         String token = (authHeader != null && authHeader.startsWith("Bearer "))
@@ -41,5 +74,20 @@ public class PostController {
         User user = JwtUtil.getClaim(token, DEFAULT_JWT_KEY);
         if (user == null) throw new RuntimeException("Token无效");
         return user.getCasId();
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<Result> search(@RequestParam String keyword, HttpServletRequest request) {
+        return postService.searchPosts(getUserIdFromToken(request), keyword);
+    }
+
+    @GetMapping("/search/suggest")
+    public ResponseEntity<Result> suggest(@RequestParam String keyword) {
+        return Result.success(postService.getSuggestions(keyword), "实时建议");
+    }
+
+    @GetMapping("/search/history")
+    public ResponseEntity<Result> history(HttpServletRequest request) {
+        return Result.success(postService.getSearchHistory(getUserIdFromToken(request)), "历史记录");
     }
 }

@@ -4,6 +4,7 @@ import com.example.wepai.data.po.Photographer;
 import com.example.wepai.data.po.User;
 import com.example.wepai.data.vo.Result;
 import com.example.wepai.mapper.PhotographerMapper;
+import com.example.wepai.mapper.SearchMapper;
 import com.example.wepai.mapper.UserMapper;
 import jakarta.annotation.Resource;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 // PhotographerService.java
@@ -20,42 +22,8 @@ public class PhotographerService {
     private PhotographerMapper photographerMapper;
     @Resource
     private UserMapper userMapper;
-
-    // 获取评分和接单量
-    public ResponseEntity<Result> getPerformance(String casId) {
-        try {
-            // 获取平均分
-            Double avgScore = photographerMapper.getAverageScore(casId);
-
-            // 获取摄影师扩展信息（包含实时计算的 orderCount）
-            Photographer info = photographerMapper.getPhotographerById(casId);
-
-            Map<String, Object> data = new HashMap<>();
-            // 处理 null 情况
-            data.put("averageScore", avgScore != null ? avgScore : 0.0);
-
-            // 如果 info 为空（该用户还没入驻），则接单量为 0
-            data.put("orderCount", info != null ? info.getOrderCount() : 0);
-
-            return Result.success(data, "获取评分和接单量成功");
-        } catch (Exception e) {
-            e.printStackTrace(); // 在控制台打印详细报错
-            return Result.error("获取性能数据失败: " + e.getMessage());
-        }
-    }
-
-    // 获取摄影师独特属性
-    public ResponseEntity<Result> getUniqueAttributes(String casId) {
-        Photographer info = photographerMapper.getPhotographerById(casId);
-        if (info == null) throw new RuntimeException("未找到摄影师信息");
-
-        Map<String, String> data = new HashMap<>();
-        data.put("style", info.getStyle());
-        data.put("equipment", info.getEquipment());
-        data.put("type", info.getType());
-
-        return Result.success(data, "获取属性成功");
-    }
+    @Resource
+    private SearchMapper searchMapper;
 
     // 获取摄影师列表
     public ResponseEntity<Result> getList() {
@@ -95,6 +63,21 @@ public class PhotographerService {
             e.printStackTrace();
             return Result.error("数据库操作失败: " + e.getMessage());
         }
+    }
+
+    public ResponseEntity<Result> searchPhotographers(String userId, String keyword) {
+        if (keyword != null && !keyword.isBlank()) {
+            searchMapper.insertHistory(userId, keyword, "photographer");
+        }
+        return Result.success(photographerMapper.searchPhotographers(keyword), "搜索完成");
+    }
+
+    public List<String> getSuggestions(String keyword) {
+        return photographerMapper.getSuggestions(keyword);
+    }
+
+    public List<String> getSearchHistory(String userId) {
+        return searchMapper.getHistory(userId, "photographer");
     }
 
 }

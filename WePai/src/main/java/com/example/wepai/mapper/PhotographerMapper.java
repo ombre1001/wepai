@@ -42,6 +42,13 @@ public interface PhotographerMapper extends BaseMapper<Photographer> {
             "style = #{style}, equipment = #{equipment}, type = #{type}")
     int upsertPhotographer(Photographer photographer);
 
+    @Select("SELECT u.cas_id, u.nickname, u.avatar_url, p.type, p.style " +
+            "FROM user u JOIN photographer p ON u.cas_id = p.cas_id " +
+            "WHERE u.role = 2 AND (u.nickname LIKE CONCAT('%',#{keyword},'%') OR p.style LIKE CONCAT('%',#{keyword},'%'))")
+    List<Map<String, Object>> searchPhotographers(@Param("keyword") String keyword);
 
+    // 实时建议：只查昵称
+    @Select("SELECT u.nickname FROM user u WHERE u.role = 2 AND u.nickname LIKE CONCAT('%',#{keyword},'%') LIMIT 8")
+    List<String> getSuggestions(@Param("keyword") String keyword);
 
 }

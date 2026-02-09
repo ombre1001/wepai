@@ -18,6 +18,7 @@ public class UserController {
     private UserService userService;
 
 
+
     static final String DEFAULT_JWT_KEY = ">U@Oa@U7Xew3!E.TQs*TD)P*7nWktUz(m=ar!k&6{QYcLTGLc+W8|u2#VYX8S6<:";
 
 
@@ -33,6 +34,11 @@ public class UserController {
     public ResponseEntity<Result> updateProfile(@RequestBody UserUpdateDTO updateDTO, HttpServletRequest request) {
         String casId = getUserIdFromToken(request);
         return userService.updateProfile(casId, updateDTO);
+    }
+
+    @GetMapping("/info/{casId}")
+    public ResponseEntity<Result> getUserPublicInfo(@PathVariable String casId) {
+        return userService.getUserPublicInfo(casId);
     }
 
 

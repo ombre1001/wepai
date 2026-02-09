@@ -18,17 +18,8 @@ public class PhotographerController {
     @Resource
     private PhotographerService photographerService;
 
-    // 获取自身或指定摄影师的评分和接单量
-    @GetMapping("/performance/{casId}")
-    public ResponseEntity<Result> getPerformance(@PathVariable String casId) {
-        return photographerService.getPerformance(casId);
-    }
 
-    // 获取详情属性
-    @GetMapping("/attributes/{casId}")
-    public ResponseEntity<Result> getAttributes(@PathVariable String casId) {
-        return photographerService.getUniqueAttributes(casId);
-    }
+
 
     // 获取所有摄影师列表
     @GetMapping("/list")
@@ -57,5 +48,20 @@ public class PhotographerController {
             throw new RuntimeException("Token无效");
         }
         return user.getCasId();
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<Result> search(@RequestParam String keyword, HttpServletRequest request) {
+        return photographerService.searchPhotographers(getUserIdFromToken(request), keyword);
+    }
+
+    @GetMapping("/search/suggest")
+    public ResponseEntity<Result> suggest(@RequestParam String keyword) {
+        return Result.success(photographerService.getSuggestions(keyword), "实时建议");
+    }
+
+    @GetMapping("/search/history")
+    public ResponseEntity<Result> history(HttpServletRequest request) {
+        return Result.success(photographerService.getSearchHistory(getUserIdFromToken(request)), "历史记录");
     }
 }

@@ -4,8 +4,7 @@ import com.example.wepai.data.dto.UserUpdateDTO;
 import com.example.wepai.data.po.Photographer;
 import com.example.wepai.data.po.User;
 import com.example.wepai.data.vo.Result;
-import com.example.wepai.mapper.PhotographerMapper;
-import com.example.wepai.mapper.UserMapper;
+import com.example.wepai.mapper.*;
 import jakarta.annotation.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -20,18 +19,63 @@ public class UserService {
     private UserMapper userMapper;
     @Resource
     private PhotographerMapper photographerMapper;
+    @Resource
+    private InteractionMapper interactionMapper;
+    @Resource
+    private SearchMapper searchMapper;
+
+    public ResponseEntity<Result> getUserPublicInfo(String targetCasId) {
+        User user = userMapper.getUserById(targetCasId);
+        if (user == null) {
+            return Result.error("用户不存在");
+        }
+
+        Map<String, Object> data = new HashMap<>();
+
+        data.put("casId", user.getCasId());
+        data.put("nickname", user.getNickname());
+        data.put("avatarUrl", user.getAvatarUrl());
+        data.put("role", user.getRole());
+        data.put("detail", user.getDetail());
+
+        // 获取总获赞量
+        int totalLikes = interactionMapper.countTotalLikesReceived(targetCasId);
+        data.put("totalLikes", totalLikes);
+
+        // 如果是摄影师 (role == 2)，额外获取接单量、风格、评分等
+        if (user.getRole() != null && user.getRole() == 2) {
+            Photographer pInfo = photographerMapper.getPhotographerById(targetCasId);
+            Double avgScore = photographerMapper.getAverageScore(targetCasId);
+
+            if (pInfo != null) {
+                data.put("orderCount", pInfo.getOrderCount());
+                data.put("style", pInfo.getStyle());
+                data.put("equipment", pInfo.getEquipment());
+                data.put("photographerType", pInfo.getType());
+            } else {
+                data.put("orderCount", 0);
+            }
+
+            data.put("averageScore", avgScore != null ? avgScore : 0.0);
+        }
+
+        return Result.success(data, "获取用户详情成功");
+    }
+
 
     public ResponseEntity<Result> getProfile(String casId) {
         User user = userMapper.getUserById(casId);
-        if (user == null) {
-            throw new RuntimeException("用户不存在");
-        }
-
+        if (user == null) throw new RuntimeException("用户不存在");
         Map<String, Object> userInfo = new HashMap<>();
-        userInfo.put("casId", casId); // 对应 POJO 中的 casID
+        userInfo.put("casId", casId);
         userInfo.put("name", user.getName());
-
-        return Result.success(userInfo, "获取用户信息成功");
+        userInfo.put("nickname", user.getNickname());
+        userInfo.put("avatarUrl", user.getAvatarUrl());
+        userInfo.put("role", user.getRole());
+        userInfo.put("detail", user.getDetail());
+        int totalLikes = interactionMapper.countTotalLikesReceived(casId);
+        userInfo.put("totalLikes", totalLikes);
+        return Result.success(userInfo, "获取个人信息成功");
     }
 
     @Transactional
@@ -82,5 +126,7 @@ public class UserService {
         Integer count = Integer.valueOf(userMapper.getUserId(userName));
         return count != null && count > 0;
     }
+
+
 }
 
