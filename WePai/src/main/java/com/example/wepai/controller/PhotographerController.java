@@ -64,4 +64,23 @@ public class PhotographerController {
     public ResponseEntity<Result> history(HttpServletRequest request) {
         return Result.success(photographerService.getSearchHistory(getUserIdFromToken(request)), "历史记录");
     }
+
+    /**
+     * 摄影师接单量排行榜
+     * 示例：GET /photographer/ranking/orders?limit=10
+     */
+    @GetMapping("/ranking/orders")
+    public ResponseEntity<Result> getOrderRanking(@RequestParam(required = false) Integer limit) {
+        return photographerService.getOrderRanking(limit);
+    }
+
+    /**
+     * 摄影师评分排行榜
+     * 示例：GET /photographer/ranking/ratings?limit=10
+     */
+    @GetMapping("/ranking/ratings")
+    public ResponseEntity<Result> getRatingRanking(@RequestParam(required = false) Integer limit) {
+        return photographerService.getRatingRanking(limit);
+    }
+
 }

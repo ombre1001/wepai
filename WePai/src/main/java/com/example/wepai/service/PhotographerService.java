@@ -11,9 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 // PhotographerService.java
 @Service
@@ -78,6 +76,26 @@ public class PhotographerService {
 
     public List<String> getSearchHistory(String userId) {
         return searchMapper.getHistory(userId, "photographer");
+    }
+
+    /**
+     * 摄影师接单量排行榜
+     *
+     * @param limit 返回前多少名
+     */
+    public ResponseEntity<Result> getOrderRanking(Integer limit) {
+        int size = (limit == null || limit <= 0) ? 10 : Math.min(limit, 100);
+        return Result.success(photographerMapper.getOrderRanking(size), "获取接单量排行榜成功");
+    }
+
+    /**
+     * 摄影师评分排行榜
+     *
+     * @param limit 返回前多少名
+     */
+    public ResponseEntity<Result> getRatingRanking(Integer limit) {
+        int size = (limit == null || limit <= 0) ? 10 : Math.min(limit, 100);
+        return Result.success(photographerMapper.getRatingRanking(size), "获取评分排行榜成功");
     }
 
 }

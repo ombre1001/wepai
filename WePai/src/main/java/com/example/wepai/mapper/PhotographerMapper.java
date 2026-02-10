@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Mapper
 public interface PhotographerMapper extends BaseMapper<Photographer> {
@@ -50,5 +51,53 @@ public interface PhotographerMapper extends BaseMapper<Photographer> {
     // 实时建议：只查昵称
     @Select("SELECT u.nickname FROM user u WHERE u.role = 2 AND u.nickname LIKE CONCAT('%',#{keyword},'%') LIMIT 8")
     List<String> getSuggestions(@Param("keyword") String keyword);
+
+    /**
+     * 摄影师接单量排行榜（按完成订单数倒序）
+     *
+     * @param limit 返回前多少名，不传则由 Service 设默认值
+     */
+    @Select("""
+            SELECT 
+                u.cas_id,
+                u.nickname,
+                u.avatar_url,
+                p.type,
+                COALESCE(COUNT(o.order_id), 0) AS orderCount
+            FROM photographer p
+            JOIN user u ON u.cas_id = p.cas_id
+            LEFT JOIN orders o 
+                ON o.photographer_id = p.cas_id 
+               AND o.status = 3   -- 只统计已完成订单
+            WHERE u.role = 2
+            GROUP BY u.cas_id, u.nickname, u.avatar_url, p.type
+            ORDER BY orderCount DESC
+            LIMIT #{limit}
+            """)
+    List<Map<String, Object>> getOrderRanking(@Param("limit") int limit);
+
+    /**
+     * 摄影师评分排行榜（按平均评分倒序，其次按评价次数倒序）
+     *
+     * @param limit 返回前多少名
+     */
+    @Select("""
+            SELECT 
+                u.cas_id,
+                u.nickname,
+                u.avatar_url,
+                p.type,
+                COALESCE(AVG(r.score), 0) AS avgScore,
+                COUNT(r.rating_id)        AS ratingCount
+            FROM photographer p
+            JOIN user u ON u.cas_id = p.cas_id
+            LEFT JOIN ratings r 
+                ON r.target_id = p.cas_id
+            WHERE u.role = 2
+            GROUP BY u.cas_id, u.nickname, u.avatar_url, p.type
+            ORDER BY avgScore DESC, ratingCount DESC
+            LIMIT #{limit}
+            """)
+    List<Map<String, Object>> getRatingRanking(@Param("limit") int limit);
 
 }
