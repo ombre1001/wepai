@@ -1,5 +1,6 @@
 package com.example.wepai.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.wepai.data.po.Photographer;
 import com.example.wepai.data.po.User;
 import com.example.wepai.data.vo.Result;
@@ -11,7 +12,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 // PhotographerService.java
 @Service
@@ -24,8 +27,15 @@ public class PhotographerService {
     private SearchMapper searchMapper;
 
     // 获取摄影师列表
-    public ResponseEntity<Result> getList() {
-        return Result.success(photographerMapper.getPhotographerList(), "获取列表成功");
+    public ResponseEntity<Result> getList(int pageNum, int pageSize) {
+        Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
+        List<Map<String, Object>> list = photographerMapper.getPhotographerListPaged(page);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", list);
+        data.put("total", page.getTotal());
+
+        return Result.success(data, "获取摄影师列表成功");
     }
 
     @Transactional(rollbackFor = Exception.class)

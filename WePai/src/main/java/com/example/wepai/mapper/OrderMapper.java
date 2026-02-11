@@ -1,6 +1,7 @@
 package com.example.wepai.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.wepai.data.po.Order;
 import org.apache.ibatis.annotations.*;
 
@@ -59,4 +60,10 @@ public interface OrderMapper extends BaseMapper<Order> {
     })
     List<Order> getLobbyOrders();
 
+
+        // 自动分页：传入 Page 对象，MyBatis-Plus 会自动拦截 SQL 添加 LIMIT
+        @Select("SELECT * FROM orders WHERE photographer_id IS NULL AND status = 0 ORDER BY created_at DESC")
+        List<Order> selectLobbyOrdersPaged(Page<Order> page);
 }
+
+

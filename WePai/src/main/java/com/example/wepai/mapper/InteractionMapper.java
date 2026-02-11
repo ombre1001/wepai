@@ -1,5 +1,6 @@
 package com.example.wepai.mapper;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.wepai.data.po.PostComment;
 import org.apache.ibatis.annotations.*;
 
@@ -34,4 +35,11 @@ public interface InteractionMapper {
             "LEFT JOIN user u ON c.user_id = u.cas_id " +
             "WHERE c.post_id = #{postId} ORDER BY c.created_at DESC")
     List<Map<String, Object>> getCommentsByPostId(@Param("postId") Long postId);
+
+    @Select("SELECT c.*, u.nickname, u.avatar_url " +
+            "FROM post_comments c " +
+            "LEFT JOIN user u ON c.user_id = u.cas_id " +
+            "WHERE c.post_id = #{postId} " +
+            "ORDER BY c.created_at DESC")
+    List<Map<String, Object>> selectCommentsByPostIdPaged(Page<?> page, @Param("postId") Long postId);
 }

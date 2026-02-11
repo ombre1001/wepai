@@ -1,6 +1,7 @@
 package com.example.wepai.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.wepai.data.po.Post;
 import org.apache.ibatis.annotations.*;
 
@@ -33,5 +34,13 @@ public interface PostMapper extends BaseMapper<Post> {
     // 实时建议：只查标题
     @Select("SELECT title FROM posts WHERE status = 1 AND title LIKE CONCAT('%',#{keyword},'%') LIMIT 8")
     List<String> getSuggestions(@Param("keyword") String keyword);
+
+    @Select("SELECT p.*, u.nickname, u.avatar_url, u.role " +
+            "FROM posts p " +
+            "LEFT JOIN user u ON p.user_id = u.cas_id " +
+            "WHERE p.status = 1 " +
+            "AND (#{type} IS NULL OR p.type = #{type}) " +
+            "ORDER BY p.created_at DESC")
+    List<Map<String, Object>> selectPostsWithUserPaged(Page<?> page, @Param("type") Integer type);
 }
 

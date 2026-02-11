@@ -31,8 +31,11 @@ public class PostController {
 
     // 获取帖子列表 (1-需求, 2-作品)
     @GetMapping("/posts")
-    public ResponseEntity<Result> getPosts(@RequestParam(required = false) Integer type) {
-        return postService.getList(type);
+    public ResponseEntity<Result> getPosts(
+            @RequestParam(required = false) Integer type,
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "10") int pageSize) {
+        return postService.getList(type, pageNum, pageSize);
     }
 
     @PostMapping("/like/{postId}")
@@ -62,8 +65,12 @@ public class PostController {
 
     // 获取评论
     @GetMapping("/comments/{postId}")
-    public ResponseEntity<Result> getComments(@PathVariable Long postId) {
-        return postService.getPostComments(postId);
+    public ResponseEntity<Result> getComments(
+            @PathVariable Long postId,
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "10") int pageSize) {
+
+        return postService.getPostComments(postId, pageNum, pageSize);
     }
 
     private String getUserIdFromToken(HttpServletRequest request) {

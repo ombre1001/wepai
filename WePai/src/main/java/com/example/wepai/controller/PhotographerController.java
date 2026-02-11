@@ -23,8 +23,10 @@ public class PhotographerController {
 
     // 获取所有摄影师列表
     @GetMapping("/list")
-    public ResponseEntity<Result> getList() {
-        return photographerService.getList();
+    public ResponseEntity<Result> getList(
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "10") int pageSize) {
+        return photographerService.getList(pageNum, pageSize);
     }
     @PostMapping("/enroll")
     public ResponseEntity<Result> enroll(@RequestParam String inviteCode, HttpServletRequest request) {
@@ -82,5 +84,4 @@ public class PhotographerController {
     public ResponseEntity<Result> getRatingRanking(@RequestParam(required = false) Integer limit) {
         return photographerService.getRatingRanking(limit);
     }
-
 }

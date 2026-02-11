@@ -1,5 +1,6 @@
 package com.example.wepai.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.wepai.data.dto.PostDTO;
 import com.example.wepai.data.po.Post;
 import com.example.wepai.data.po.PostComment;
@@ -12,7 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PostService {
@@ -40,8 +43,17 @@ public class PostService {
         return Result.success(null, "发布成功");
     }
 
-    public ResponseEntity<Result> getList(Integer type) {
-        return Result.success(postMapper.selectPostsWithUser(type), "获取广场列表成功");
+    public ResponseEntity<Result> getList(Integer type, int pageNum, int pageSize) {
+        Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
+
+        // 这里的 page 是第一个参数，type 是第二个参数
+        List<Map<String, Object>> list = postMapper.selectPostsWithUserPaged(page, type);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", list);
+        data.put("total", page.getTotal());
+
+        return Result.success(data, "获取广场列表成功");
     }
 
     public ResponseEntity<Result> likePost(String userId, Long postId) {
@@ -70,8 +82,20 @@ public class PostService {
     }
 
     // 获取评论
-    public ResponseEntity<Result> getPostComments(Long postId) {
-        return Result.success(interactionMapper.getCommentsByPostId(postId), "获取评论列表成功");
+    public ResponseEntity<Result> getPostComments(Long postId, int pageNum, int pageSize) {
+        // 1. 创建分页对象
+        Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
+
+        // 2. 查询数据库 (MyBatis-Plus 会自动将 total 填入 page 对象)
+        List<Map<String, Object>> list = interactionMapper.selectCommentsByPostIdPaged(page, postId);
+
+        // 3. 封装返回结果
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", list);            // 评论数据列表
+        data.put("total", page.getTotal());  // 总评论数
+        data.put("pages", page.getPages());  // 总页数
+
+        return Result.success(data, "获取评论列表成功");
     }
 
     public ResponseEntity<Result> searchPosts(String userId, String keyword) {

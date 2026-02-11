@@ -44,13 +44,10 @@ public class OrderController {
 
     // 获取广场上的待接订单（大厅模式）
     @GetMapping("/lobby")
-    public ResponseEntity<Result> getLobbyOrders() {
-        LambdaQueryWrapper<Order> query = new LambdaQueryWrapper<>();
-        query.isNull(Order::getPhotographerId)
-                .eq(Order::getStatus, 0)
-                .orderByDesc(Order::getCreatedAt);
-        List<Order> orders = orderMapper.getLobbyOrders();
-        return Result.success(orders, "获取大厅订单成功");
+    public ResponseEntity<Result> getLobbyOrders(
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "10") int pageSize) {
+        return orderService.getLobbyOrders(pageNum, pageSize);
     }
 
     // 获取我的订单

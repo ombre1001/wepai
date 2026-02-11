@@ -2,12 +2,12 @@ package com.example.wepai.mapper;
 
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.wepai.data.po.Photographer;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Mapper
 public interface PhotographerMapper extends BaseMapper<Photographer> {
@@ -99,5 +99,11 @@ public interface PhotographerMapper extends BaseMapper<Photographer> {
             LIMIT #{limit}
             """)
     List<Map<String, Object>> getRatingRanking(@Param("limit") int limit);
+
+    @Select("SELECT u.cas_id, u.nickname, u.avatar_url, p.type, p.order_count " +
+            "FROM user u JOIN photographer p ON u.cas_id = p.cas_id " +
+            "WHERE u.role = 2")
+    List<Map<String, Object>> getPhotographerListPaged(Page<?> page);
+
 
 }

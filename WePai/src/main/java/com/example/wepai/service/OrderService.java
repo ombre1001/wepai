@@ -1,5 +1,6 @@
 package com.example.wepai.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.wepai.data.dto.OrderDTO;
 import com.example.wepai.data.dto.RatingDTO;
 import com.example.wepai.data.po.Order;
@@ -15,6 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class OrderService {
@@ -179,5 +183,22 @@ public class OrderService {
             e.printStackTrace();
             return Result.error("数据库操作失败: " + e.getMessage());
         }
+    }
+
+    public ResponseEntity<Result> getLobbyOrders(int pageNum, int pageSize) {
+        // 1. 准备分页参数
+        Page<Order> page = new Page<>(pageNum, pageSize);
+
+        // 2. 查询 (结果会自动装入 page 对象中)
+        // 注意：这里虽然返回 List，但 page.getTotal() 已经被插件填充了
+        List<Order> list = orderMapper.selectLobbyOrdersPaged(page);
+
+        // 3. 封装返回
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", list);
+        data.put("total", page.getTotal());
+        data.put("pages", page.getPages());
+
+        return Result.success(data, "获取大厅订单成功");
     }
 }
