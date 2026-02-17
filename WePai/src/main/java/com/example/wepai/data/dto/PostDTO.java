@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class PostDTO {
-    private Integer type;
+    private String type;
     private String title;
     private String content;
     private String images; // JSON string of urls

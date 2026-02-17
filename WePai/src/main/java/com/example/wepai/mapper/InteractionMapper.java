@@ -27,7 +27,9 @@ public interface InteractionMapper {
     int countTotalLikesReceived(@Param("userId") String userId);
 
     // --- 评论相关 ---
-    @Insert("INSERT INTO post_comments (post_id, user_id, content, created_at) VALUES (#{comment.postId}, #{comment.userId}, #{comment.content}, NOW())")
+    @Insert("INSERT INTO post_comments (post_id, user_id, content, created_at) " +
+            "VALUES (#{comment.postId}, #{comment.userId}, #{comment.content}, #{comment.createdAt})")
+    @Options(useGeneratedKeys = true, keyProperty = "comment.id") // 注意：这里的 keyProperty 对应 PO 中的 id 字段
     int insertComment(@Param("comment") PostComment comment);
 
     // 获取某帖子的评论列表（包含评论者的昵称和头像）

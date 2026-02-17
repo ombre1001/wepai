@@ -40,13 +40,15 @@ public class PostService {
         post.setCreatedAt(LocalDateTime.now());
 
         postMapper.insertPost(post);
-        return Result.success(null, "发布成功");
+        Map<String, Object> resMap = new HashMap<>();
+        resMap.put("postId", post.getPostId()); // 确保 Post 实体类中有 getPostId()
+        resMap.put("createTime", post.getCreatedAt());
+
+        return Result.success(resMap, "发布成功");
     }
 
-    public ResponseEntity<Result> getList(Integer type, int pageNum, int pageSize) {
+    public ResponseEntity<Result> getList(String type, int pageNum, int pageSize) { // 参数改为 String
         Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
-
-        // 这里的 page 是第一个参数，type 是第二个参数
         List<Map<String, Object>> list = postMapper.selectPostsWithUserPaged(page, type);
 
         Map<String, Object> data = new HashMap<>();
@@ -78,7 +80,11 @@ public class PostService {
         comment.setUserId(userId);
         comment.setContent(content);
         interactionMapper.insertComment(comment);
-        return Result.success(null, "评论成功");
+        Map<String, Object> resMap = new HashMap<>();
+        resMap.put("commentId", comment.getId()); // 对应 PostComment.java 中的 id 字段
+        resMap.put("createTime", comment.getCreatedAt());
+
+        return Result.success(resMap, "评论成功");
     }
 
     // 获取评论

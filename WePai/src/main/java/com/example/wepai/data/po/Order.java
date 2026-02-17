@@ -14,36 +14,33 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("orders") // 对应数据库表名 orders
+@TableName("orders")
 public class Order {
     @TableId(type = IdType.AUTO)
     private Long orderId;
 
-    private String customerId;      // 对应 User.casId
-    private String photographerId;  // 对应 Photographer.casId
+    private String customerId;
+    private String photographerId;
 
-    private Integer type;           // 1-毕业照, 2-写真, 3-活动等
+    private String type;             // 修改为 String
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime shootTime; // 拍摄时间
+    private LocalDateTime shootTime;
 
-    private String location;        // 拍摄地点
-    private BigDecimal price;       // 价格
-    private String remark;          // 备注
+    private String duration;         // 新增：时长
+    private String location;
+    private Integer subjectCount;    // 新增：人数
+    private BigDecimal price;
+    private Boolean needEquipment;   // 新增：是否需要器材 (数据库建议用 TINYINT/BOOLEAN)
+    private String contactInfo;      // 新增：联系方式
+    private String remark;
 
     /**
-     * 订单状态:
-     * 0: 待接单 (Pending)
-     * 1: 待支付 (Accepted/Unpaid)
-     * 2: 支付中 (Paid/To be shot)
-     * 3: 已完成 (Completed)
-     * -1: 已取消 (Cancelled)
-     * -2: 已拒绝 (Rejected)
+     * 0: 待接单, 1: 待支付, 2: 进行中, 3: 已完成, -1: 取消, -2: 拒绝，-3:草稿
      */
-    private Integer status;//0: 待接单(大厅中), 1: 已接单/待支付, 2: 待交付, 3: 已完成
-
-    private Integer paymentStatus;  // 0:未付, 1:已付
-    private String deliverUrl;      // 成片交付链接
+    private Integer status;
+    private Integer paymentStatus;
+    private String deliverUrl;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;

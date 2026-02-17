@@ -70,6 +70,11 @@ public class OrderController {
         String casId = getUserIdFromToken(request);
         return orderService.rateOrder(casId, dto);
     }
+    @GetMapping("/photographer/pending")
+    public ResponseEntity<Result> getPendingOrders(HttpServletRequest request) {
+        String userId = getUserIdFromToken(request);
+        return orderService.getPendingOrders(userId);
+    }
 
     private String getUserIdFromToken(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");

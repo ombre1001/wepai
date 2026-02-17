@@ -32,7 +32,7 @@ public class PostController {
     // 获取帖子列表 (1-需求, 2-作品)
     @GetMapping("/posts")
     public ResponseEntity<Result> getPosts(
-            @RequestParam(required = false) Integer type,
+            @RequestParam(required = false) String type, // 改为 String 类型
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "10") int pageSize) {
         return postService.getList(type, pageNum, pageSize);

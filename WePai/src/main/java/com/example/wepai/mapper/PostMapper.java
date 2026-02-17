@@ -15,9 +15,9 @@ public interface PostMapper extends BaseMapper<Post> {
             "FROM posts p " +
             "LEFT JOIN user u ON p.user_id = u.cas_id " +
             "WHERE p.status = 1 " +
-            "AND (#{type} IS NULL OR p.type = #{type}) " +
+            "AND (#{type} IS NULL OR p.type = #{type}) " + // SQL 逻辑兼容 String
             "ORDER BY p.created_at DESC")
-    List<Map<String, Object>> selectPostsWithUser(Integer type);
+    List<Map<String, Object>> selectPostsWithUser(String type); // 参数改为 String
 
     @Insert("INSERT INTO posts (user_id, type, title, content, images, status, created_at) " +
             "VALUES (#{userId}, #{type}, #{title}, #{content}, #{images}, #{status}, #{createdAt})")
@@ -41,6 +41,7 @@ public interface PostMapper extends BaseMapper<Post> {
             "WHERE p.status = 1 " +
             "AND (#{type} IS NULL OR p.type = #{type}) " +
             "ORDER BY p.created_at DESC")
-    List<Map<String, Object>> selectPostsWithUserPaged(Page<?> page, @Param("type") Integer type);
+    List<Map<String, Object>> selectPostsWithUserPaged(Page<?> page, @Param("type") String type);
+
 }
 

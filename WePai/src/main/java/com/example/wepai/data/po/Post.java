@@ -12,7 +12,7 @@ public class Post {
     @TableId(type = IdType.AUTO)
     private Long postId;
     private String userId;      // 发布者
-    private Integer type;       // 1: 约拍需求(客户发), 2: 作品展示(摄影师发)
+    private String type;       // 1: 约拍需求(客户发), 2: 作品展示(摄影师发)
     private String title;
     private String content;
     private String images;      // 图片JSON
