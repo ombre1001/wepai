@@ -306,4 +306,32 @@ public class OrderService {
         List<Map<String, Object>> list = orderMapper.selectPendingOrdersForPhotographer(photographerId);
         return Result.success(list, "获取待处理订单成功");
     }
+
+    /**
+     * 公开的作品展示列表
+     */
+    public ResponseEntity<Result> getPublicGallery(int pageNum, int pageSize) {
+        Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
+        List<Map<String, Object>> list = orderMapper.selectPublicGallery(page);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", list);
+        data.put("total", page.getTotal());
+        return Result.success(data, "获取作品广场成功");
+    }
+
+    /**
+     * 公开查询：获取指定摄影师的作品集
+     */
+    public ResponseEntity<Result> getPhotographerWorksPublic(String photographerId, int pageNum, int pageSize) {
+        Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
+        List<Map<String, Object>> list = orderMapper.selectPhotographerWorks(page, photographerId);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", list);
+        data.put("total", page.getTotal());
+        data.put("pages", page.getPages());
+
+        return Result.success(data, "获取摄影师作品成功");
+    }
 }

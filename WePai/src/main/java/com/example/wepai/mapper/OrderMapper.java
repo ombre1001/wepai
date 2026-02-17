@@ -81,4 +81,20 @@ public interface OrderMapper extends BaseMapper<Order> {
             "ORDER BY o.created_at DESC")
     List<Map<String, Object>> selectPendingOrdersForPhotographer(@Param("photographerId") String photographerId);
 
+    @Select("SELECT o.*, u.nickname as photographerName, u.avatar_url as photographerAvatar " +
+            "FROM orders o " +
+            "LEFT JOIN user u ON o.photographer_id = u.cas_id " +
+            "WHERE o.status = 3 AND o.deliver_url IS NOT NULL AND o.deliver_url != '' " +
+            "ORDER BY o.shoot_time DESC")
+    List<Map<String, Object>> selectPublicGallery(Page<?> page);
+
+    @Select("SELECT o.*, u.nickname as customerName, u.avatar_url as customerAvatar " +
+            "FROM orders o " +
+            "LEFT JOIN user u ON o.customer_id = u.cas_id " +
+            "WHERE o.photographer_id = #{photographerId} " +
+            "AND o.status = 3 " + // 必须是已完成
+            "AND o.deliver_url IS NOT NULL " + // 且必须有作品图
+            "ORDER BY o.shoot_time DESC")
+    List<Map<String, Object>> selectPhotographerWorks(Page<?> page, @Param("photographerId") String photographerId);
 }
+

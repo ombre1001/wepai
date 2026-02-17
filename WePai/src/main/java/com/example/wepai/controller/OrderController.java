@@ -86,4 +86,20 @@ public class OrderController {
         if (user == null) throw new RuntimeException("Token无效");
         return user.getCasId();
     }
+
+    @GetMapping("/gallery")
+    public ResponseEntity<Result> getGallery(
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "10") int pageSize) {
+        return orderService.getPublicGallery(pageNum, pageSize);
+    }
+
+    @GetMapping("/photographer/portfolio")
+    public ResponseEntity<Result> getPhotographerPortfolio(
+            @RequestParam String casId, // 前端从个人主页 URL 或点击处传入
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "10") int pageSize) {
+
+        return orderService.getPhotographerWorksPublic(casId, pageNum, pageSize);
+    }
 }
