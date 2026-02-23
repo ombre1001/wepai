@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小猪佩奇</title>
+    <link rel="stylesheet"href="./css/style.css">
+    <link rel="stylesheet"href="./css/character.css">
+</head>
+<body>
+    <div class="slid-container">
+        <div class="slider">
+            <div class="slide">
+                <iframe src="//player.bilibili.com/player.html?isOutside=true&aid=215605025&bvid=BV1Fa411p78M&cid=763794153&p=1&autoplay=0" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
+                <div class="slide-content">
+                    <h2>开头纯享</h2>
+                    <p>还记得佩奇一家的经典开头吗？</p>
+                </div>
+            </div>
+            <div class="slide">
+                <iframe src="//player.bilibili.com/player.html?isOutside=true&aid=490313984&bvid=BV1AN411q7b6&cid=1249172426&p=1&autoplay=0" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
+                <div class="slide-content">
+                    <h2>猪语纯享</h2>
+                    <p>一起聆听他们的声音</p>
+                </div>
+            </div>
+            <div class="slide">
+                <iframe src="//player.bilibili.com/player.html?isOutside=true&aid=115207615547829&bvid=BV1f8puzAEMQ&cid=32397984655&p=1&autoplay=0" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
+                <div class="slide-content">
+                    <h2>世子之争</h2>
+                    <p>佩奇与乔治，世子之争，向来如此</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="slider-controls">
+            <button class="slider-btn prev-btn">&lt;</button>
+            <button class="slider-btn next-btn">&gt;</button>
+        </div>
+        
+        <div class="slider-indicators">
+        </div>
+    </div>
+
+    <nav>
+        <div class="nav-container">
+            <a href="./index.html" class="nav-item ">首页</a>
+            <a href="./character.html" class="nav-item active">主要人物</a>
+            <a href="./message.html" class="nav-item ">留言墙</a>
+        </div>
+    </nav>
+
+    <div class="content">
+
+     
+        <div class="character-grid">
+            <div class="character-card" onclick="openModal('modal1')">
+                <img src="./image/2.jpg" >
+            </div>
+
+            <div class="character-card" onclick="openModal('modal2')">
+                <img src="./image/3.jpg" >
+            </div>
+
+            <div class="character-card" onclick="openModal('modal3')">
+                <img src="./image/4.jpg" >
+            </div>
+
+            <div class="character-card" onclick="openModal('modal4')">
+                <img src="./image/5.jpg" >
+            </div>
+
+            <div class="character-card" onclick="openModal('modal5')">
+                <img src="./image/6.jpg" >
+            </div>
+
+            <div class="character-card" onclick="openModal('modal6')">
+                <img src="./image/7.jpg" >
+            </div>
+  
+            <div class="character-card" onclick="openModal('modal7')">
+                <img src="./image/8.jpg" >
+            </div>
+
+            <div class="character-card" onclick="openModal('modal8')">
+                <img src="./image/9.jpg" >
+            </div>
+
+            <div class="character-card" onclick="openModal('modal9')">
+                <img src="./image/10.jpg" >
+            </div>
+        </div>
+    </div>
+
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const slider = document.querySelector('.slider');
+            const slides = document.querySelectorAll('.slide');
+            const prevBtn = document.querySelector('.prev-btn');
+            const nextBtn = document.querySelector('.next-btn');
+            const indicatorsContainer = document.querySelector('.slider-indicators');
+            
+            let currentIndex = 0;
+            const slideCount = slides.length;
+            let slideInterval;
+            
+
+            function createIndicators() {
+                for (let i = 0; i < slideCount; i++) {
+                    const indicator = document.createElement('div');
+                    indicator.classList.add('indicator');
+                    if (i === currentIndex) {
+                        indicator.classList.add('active');
+                    }
+                    indicator.addEventListener('click', () => {
+                        goToSlide(i);
+                    });
+                    indicatorsContainer.appendChild(indicator);
+                }
+            }
+            
+
+            function updateIndicators() {
+                const indicators = document.querySelectorAll('.indicator');
+                indicators.forEach((indicator, index) => {
+                    if (index === currentIndex) {
+                        indicator.classList.add('active');
+                    } else {
+                        indicator.classList.remove('active');
+                    }
+                });
+            }
+            
+
+            function initSlider() {
+                createIndicators();
+                updateSlider();
+                startAutoSlide();
+            }
+            
+
+            function updateSlider() {
+                slider.style.transform = `translateX(-${currentIndex * 100}%)`;
+                updateIndicators();
+            }
+            
+
+            function startAutoSlide() {
+                slideInterval = setInterval(() => {
+                    currentIndex = (currentIndex + 1) % slideCount;
+                    updateSlider();
+                }, 5000);
+            }
+            
+
+            function resetAutoSlide() {
+                clearInterval(slideInterval);
+                startAutoSlide();
+            }
+            
+
+            function goToPrev() {
+                currentIndex = (currentIndex - 1 + slideCount) % slideCount;
+                updateSlider();
+                resetAutoSlide();
+            }
+            
+
+            function goToNext() {
+                currentIndex = (currentIndex + 1) % slideCount;
+                updateSlider();
+                resetAutoSlide();
+            }
+            
+
+            function goToSlide(index) {
+                currentIndex = index;
+                updateSlider();
+                resetAutoSlide();
+            }
+            
+
+            prevBtn.addEventListener('click', goToPrev);
+            nextBtn.addEventListener('click', goToNext);
+
+            slider.addEventListener('mouseenter', () => {
+                clearInterval(slideInterval);
+            });
+            
+            slider.addEventListener('mouseleave', startAutoSlide);
+            
+
+            initSlider();
+        });
+    </script>
+</body>
+</html>

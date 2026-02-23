@@ -1,0 +1,136 @@
+package com.example.wepai.controller;
+
+import com.example.wepai.data.dto.PostDTO;
+import com.example.wepai.data.vo.Result;
+import com.example.wepai.service.PostService;
+import com.example.wepai.utils.JwtUtil;
+import com.example.wepai.data.po.User;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+import static com.example.wepai.controller.UserController.DEFAULT_JWT_KEY;
+
+@RestController
+@RequestMapping("/square")
+@CrossOrigin
+public class PostController {
+
+    @Resource
+    private PostService postService;
+
+    // 发布帖子
+    @PostMapping("/publish")
+    public ResponseEntity<Result> publish(@RequestBody PostDTO dto, HttpServletRequest request) {
+        String casId = getUserIdFromToken(request);
+        return postService.publish(casId, dto);
+    }
+
+    /**
+     * 获取列表（不强制 Token，但带了 Token 会显示 isLiked）
+     */
+    @GetMapping("/posts")
+    public ResponseEntity<Result> getPosts(
+            @RequestParam(required = false) Integer type,
+            @RequestParam(required = false) String keyword, // 新增参数
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "10") int pageSize,
+            HttpServletRequest request) {
+
+        String currentUserId = tryGetUserId(request);
+        // 传入 keyword
+        return postService.getList(type, pageNum, pageSize, currentUserId, keyword);
+    }
+
+    /**
+     * 获取帖子详情
+     * GET /square/detail/3
+     */
+    @GetMapping("/detail/{postId}")
+    public ResponseEntity<Result> getDetail(@PathVariable Long postId, HttpServletRequest request) {
+        String currentUserId = tryGetUserId(request);
+        return postService.getPostDetail(postId, currentUserId);
+    }
+
+    @GetMapping("/my-posts")
+    public ResponseEntity<Result> getMyPosts(
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "10") int pageSize,
+            HttpServletRequest request) {
+
+        String userId = getUserIdFromToken(request);
+
+        return postService.getMyPosts(userId, pageNum, pageSize);
+    }
+
+    @PostMapping("/like/{postId}")
+    public ResponseEntity<Result> like(@PathVariable Long postId, HttpServletRequest request) {
+        String userId = getUserIdFromToken(request);
+        return postService.likePost(userId, postId);
+    }
+
+    // 取消点赞
+    @PostMapping("/unlike/{postId}")
+    public ResponseEntity<Result> unlike(@PathVariable Long postId, HttpServletRequest request) {
+        String userId = getUserIdFromToken(request);
+        return postService.unlikePost(userId, postId);
+    }
+
+    // 评论
+    @PostMapping("/comment")
+    public ResponseEntity<Result> comment(@RequestBody Map<String, Object> body, HttpServletRequest request) {
+        String userId = getUserIdFromToken(request);
+        if (!body.containsKey("postId") || !body.containsKey("content")) {
+            return Result.error("参数缺失");
+        }
+        Long postId = Long.valueOf(body.get("postId").toString());
+        String content = (String) body.get("content");
+        return postService.commentPost(userId, postId, content);
+    }
+
+    // 获取评论
+    @GetMapping("/comments/{postId}")
+    public ResponseEntity<Result> getComments(
+            @PathVariable Long postId,
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "10") int pageSize) {
+
+        return postService.getPostComments(postId, pageNum, pageSize);
+    }
+
+    private String getUserIdFromToken(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        String token = (authHeader != null && authHeader.startsWith("Bearer "))
+                ? authHeader.substring(7) : null;
+        if (token == null) throw new RuntimeException("未提供认证Token");
+        User user = JwtUtil.getClaim(token, DEFAULT_JWT_KEY);
+        if (user == null) throw new RuntimeException("Token无效");
+        return user.getCasId();
+    }
+
+
+    @GetMapping("/search/suggest")
+    public ResponseEntity<Result> suggest(@RequestParam String keyword) {
+        return Result.success(postService.getSuggestions(keyword), "实时建议");
+    }
+
+    @GetMapping("/search/history")
+    public ResponseEntity<Result> history(HttpServletRequest request) {
+        return Result.success(postService.getSearchHistory(getUserIdFromToken(request)), "历史记录");
+    }
+
+    private String tryGetUserId(HttpServletRequest request) {
+        try {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7);
+                return JwtUtil.getClaim(token, DEFAULT_JWT_KEY).getCasId();
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+}

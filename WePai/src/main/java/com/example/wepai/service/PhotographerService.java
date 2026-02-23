@@ -1,0 +1,131 @@
+package com.example.wepai.service;
+
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.wepai.data.po.Photographer;
+import com.example.wepai.data.po.User;
+import com.example.wepai.data.vo.Result;
+import com.example.wepai.mapper.PhotographerMapper;
+import com.example.wepai.mapper.SearchMapper;
+import com.example.wepai.mapper.UserMapper;
+import jakarta.annotation.Resource;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+// PhotographerService.java
+@Service
+public class PhotographerService {
+    @Resource
+    private PhotographerMapper photographerMapper;
+    @Resource
+    private UserMapper userMapper;
+    @Resource
+    private SearchMapper searchMapper;
+
+    // 获取摄影师列表
+    public ResponseEntity<Result> getList(int pageNum, int pageSize, String keyword, String userId) {
+        // 1. 处理空字符串
+        if (keyword != null && keyword.isBlank()) {
+            keyword = null;
+        }
+
+        // 2. 记录搜索历史
+        if (keyword != null && userId != null) {
+            searchMapper.insertHistory(userId, keyword, "photographer");
+        }
+
+        // 3. 分页查询
+        Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
+        List<Map<String, Object>> list = photographerMapper.getPhotographerListPaged(page, keyword);
+
+        list.forEach(item -> {
+            parseJsonField(item, "style");
+            parseJsonField(item, "equipment");
+            parseJsonField(item, "type");
+        });
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", list);
+        data.put("total", page.getTotal());
+
+        return Result.success(data, "获取摄影师列表成功");
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public ResponseEntity<Result> enroll(String casId, String inviteCode) {
+        String validCode = "SDU_PHOTO_666";
+        if (!validCode.equals(inviteCode)) {
+            return Result.error("验证码不正确");
+        }
+
+        try {
+            User user = userMapper.getUserById(casId);
+            if (user == null) {
+                return Result.error("用户不存在");
+            }
+
+            int affectedRows = userMapper.updateUserRole(casId, 2);
+            if (affectedRows <= 0) {
+                return Result.error("更新用户角色失败");
+            }
+
+            Photographer info = photographerMapper.getPhotographerById(casId);
+
+            if (info == null) {
+                Photographer newInfo = new Photographer();
+                newInfo.setCasId(casId);
+                newInfo.setOrderCount(0);
+                photographerMapper.upsertPhotographer(newInfo);
+            }
+
+            return Result.success(null, "恭喜，入驻成功！已获得摄影师权限。");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("数据库操作失败: " + e.getMessage());
+        }
+    }
+
+
+    public List<String> getSuggestions(String keyword) {
+        return photographerMapper.getSuggestions(keyword);
+    }
+
+    public List<String> getSearchHistory(String userId) {
+        return searchMapper.getHistory(userId, "photographer");
+    }
+
+    /**
+     * 摄影师接单量排行榜
+     *
+     * @param limit 返回前多少名
+     */
+    public ResponseEntity<Result> getOrderRanking(Integer limit) {
+        int size = (limit == null || limit <= 0) ? 10 : Math.min(limit, 100);
+        return Result.success(photographerMapper.getOrderRanking(size), "获取接单量排行榜成功");
+    }
+
+    /**
+     * 摄影师评分排行榜
+     *
+     * @param limit 返回前多少名
+     */
+    public ResponseEntity<Result> getRatingRanking(Integer limit) {
+        int size = (limit == null || limit <= 0) ? 10 : Math.min(limit, 100);
+        return Result.success(photographerMapper.getRatingRanking(size), "获取评分排行榜成功");
+    }
+
+    private void parseJsonField(Map<String, Object> item, String fieldName) {
+        Object val = item.get(fieldName);
+        if (val instanceof String && ((String) val).startsWith("[")) {
+            try {
+                item.put(fieldName, cn.hutool.json.JSONUtil.toList((String) val, String.class));
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+}

@@ -1,0 +1,50 @@
+.content {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.welcome-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin-bottom: 40px;
+    align-items: center;
+}
+
+.welcome-text {
+    flex: 1;
+    min-width: 300px;
+}
+
+.welcome-text h1 {
+    font-size: 32px;
+    margin-bottom: 20px;
+    color: #b93d62;
+}
+
+.welcome-text p {
+    line-height: 1.6;
+    margin-bottom: 15px;
+    text-indent: 2rem;
+    color: #b32d55;
+}
+
+.welcome-image {
+    flex: 1;
+    min-width: 300px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(223, 114, 199, 0.1);
+}
+
+.welcome-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: transform 0.3s;
+}
+
+.welcome-image:hover img {
+    transform: scale(1.03);
+}

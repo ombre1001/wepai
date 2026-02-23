@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小猪佩奇</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/index.css">
+</head>
+<body>
+    <div class="slid-container">
+        <div class="slider">
+            <div class="slide">
+                <iframe src="//player.bilibili.com/player.html?isOutside=true&aid=215605025&bvid=BV1Fa411p78M&cid=763794153&p=1&autoplay=0" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
+                <div class="slide-content">
+                    <h2>开头纯享</h2>
+                    <p>还记得佩奇一家的经典开头吗？</p>
+                </div>
+            </div>
+            <div class="slide">
+                <iframe src="//player.bilibili.com/player.html?isOutside=true&aid=490313984&bvid=BV1AN411q7b6&cid=1249172426&p=1&autoplay=0" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
+                <div class="slide-content">
+                    <h2>猪语纯享</h2>
+                    <p>一起聆听他们的声音</p>
+                </div>
+            </div>
+            <div class="slide">
+                <iframe src="//player.bilibili.com/player.html?isOutside=true&aid=115207615547829&bvid=BV1f8puzAEMQ&cid=32397984655&p=1&autoplay=0" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
+                <div class="slide-content">
+                    <h2>世子之争</h2>
+                    <p>佩奇与乔治，世子之争，向来如此</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="slider-controls">
+            <button class="slider-btn prev-btn">&lt;</button>
+            <button class="slider-btn next-btn">&gt;</button>
+        </div>
+        
+        <div class="slider-indicators">
+        </div>
+    </div>
+
+    <nav>
+        <div class="nav-container">
+            <a href="./index.html" class="nav-item active">首页</a>
+            <a href="./character.html" class="nav-item ">主要人物</a>
+            <a href="./message.html" class="nav-item ">留言墙</a>
+        </div>
+    </nav>
+
+    <div class="content">
+
+    
+        <section class="welcome-section">
+    
+            <div class="welcome-text">
+    
+                <h1>欢迎来到小猪佩奇的世界</h1>
+                <p>《小猪佩奇》是英国动画公司Astley BakerDavies、Enter-tainment One制作的原创欧洲儿童系列电视动画。</p>
+                <p>2015年6月，《小猪佩奇》引进中国大陆，并在中央电视台少儿频道首播。</p>
+                <p>小猪佩奇是一只可爱的粉色小猪，她与弟弟乔治、爸爸、妈妈快乐地住在一起。小猪佩奇最喜欢做的事情是玩游戏，打扮的漂漂亮亮，度假，以及住在小泥坑里快乐的跳上跳下。除了这些，她还喜欢到处探险，虽然有些时候会遇到一些小状况，但总可以化险为夷，而且都会带给大家意外的惊喜</p>
+            </div>
+            <div class="welcome-image">
+                <img src=".\image\1.jpg">
+            </div>
+        </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const slider = document.querySelector('.slider');
+            const slides = document.querySelectorAll('.slide');
+            const prevBtn = document.querySelector('.prev-btn');
+            const nextBtn = document.querySelector('.next-btn');
+            const indicatorsContainer = document.querySelector('.slider-indicators');
+            
+            let currentIndex = 0;
+            const slideCount = slides.length;
+            let slideInterval;
+            
+
+            function createIndicators() {
+                for (let i = 0; i < slideCount; i++) {
+                    const indicator = document.createElement('div');
+                    indicator.classList.add('indicator');
+                    if (i === currentIndex) {
+                        indicator.classList.add('active');
+                    }
+                    indicator.addEventListener('click', () => {
+                        goToSlide(i);
+                    });
+                    indicatorsContainer.appendChild(indicator);
+                }
+            }
+            
+
+            function updateIndicators() {
+                const indicators = document.querySelectorAll('.indicator');
+                indicators.forEach((indicator, index) => {
+                    if (index === currentIndex) {
+                        indicator.classList.add('active');
+                    } else {
+                        indicator.classList.remove('active');
+                    }
+                });
+            }
+            
+
+            function initSlider() {
+                createIndicators();
+                updateSlider();
+                startAutoSlide();
+            }
+            
+
+            function updateSlider() {
+                slider.style.transform = `translateX(-${currentIndex * 100}%)`;
+                updateIndicators();
+            }
+            
+
+            function startAutoSlide() {
+                slideInterval = setInterval(() => {
+                    currentIndex = (currentIndex + 1) % slideCount;
+                    updateSlider();
+                }, 5000);
+            }
+            
+
+            function resetAutoSlide() {
+                clearInterval(slideInterval);
+                startAutoSlide();
+            }
+            
+
+            function goToPrev() {
+                currentIndex = (currentIndex - 1 + slideCount) % slideCount;
+                updateSlider();
+                resetAutoSlide();
+            }
+            
+
+            function goToNext() {
+                currentIndex = (currentIndex + 1) % slideCount;
+                updateSlider();
+                resetAutoSlide();
+            }
+            
+
+            function goToSlide(index) {
+                currentIndex = index;
+                updateSlider();
+                resetAutoSlide();
+            }
+            
+
+            prevBtn.addEventListener('click', goToPrev);
+            nextBtn.addEventListener('click', goToNext);
+
+            slider.addEventListener('mouseenter', () => {
+                clearInterval(slideInterval);
+            });
+            
+            slider.addEventListener('mouseleave', startAutoSlide);
+            
+
+            initSlider();
+        });
+    </script>
+</body>
+</html>
