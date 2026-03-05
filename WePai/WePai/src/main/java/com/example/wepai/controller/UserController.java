@@ -1,0 +1,82 @@
+package com.example.wepai.controller;
+
+import com.example.wepai.data.dto.FeedbackDTO;
+import com.example.wepai.data.dto.UserUpdateDTO;
+import com.example.wepai.data.vo.Result;
+import com.example.wepai.service.UserService;
+import jakarta.annotation.Resource;
+import com.example.wepai.utils.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+
+@CrossOrigin
+@RestController
+@RequestMapping("/user")
+public class UserController {
+    @Resource
+    private UserService userService;
+
+
+
+
+    static final String DEFAULT_JWT_KEY = ">U@Oa@U7Xew3!E.TQs*TD)P*7nWktUz(m=ar!k&6{QYcLTGLc+W8|u2#VYX8S6<:";
+
+
+
+
+    @GetMapping("/getProfile")
+    public ResponseEntity<Result> getProfile(HttpServletRequest request) {
+        String casId = getUserIdFromToken(request);
+        return userService.getProfile(casId);
+    }
+
+    @PostMapping("/updateProfile")
+    public ResponseEntity<Result> updateProfile(@RequestBody UserUpdateDTO updateDTO, HttpServletRequest request) {
+        String casId = getUserIdFromToken(request);
+        return userService.updateProfile(casId, updateDTO);
+    }
+
+    @GetMapping("/info/{casId}")
+    public ResponseEntity<Result> getUserPublicInfo(@PathVariable String casId) {
+        return userService.getUserPublicInfo(casId);
+    }
+
+
+    private String getUserIdFromToken(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        String token = (authHeader != null && authHeader.startsWith("Bearer "))
+                ? authHeader.substring(7) : null;
+
+        if (token == null) {
+            throw new RuntimeException("未提供认证Token");
+        }
+
+        com.example.wepai.data.po.User user = JwtUtil.getClaim(token, DEFAULT_JWT_KEY);
+        if (user == null) {
+            throw new RuntimeException("Token无效或已过期");
+        }
+        return user.getCasId();
+    }
+
+    @GetMapping("/announcements")
+    public ResponseEntity<Result> getAnnouncements() {
+        return userService.getAnnouncements();
+    }
+
+    @PostMapping("/feedback")
+    public ResponseEntity<Result> submitFeedback(@RequestBody FeedbackDTO dto, HttpServletRequest request) {
+        String userId = getUserIdFromToken(request); // 假设你已有的解析方法
+        return userService.submitFeedback(userId, dto);
+    }
+
+    @GetMapping("/feedback/my")
+    public ResponseEntity<Result> getMyFeedback(HttpServletRequest request) {
+        String userId = getUserIdFromToken(request);
+        return userService.getMyFeedbacks(userId);
+    }
+}
+
+
+
