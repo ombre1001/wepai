@@ -24,9 +24,12 @@ public class PhotographerController {
     // 获取所有摄影师列表
     @GetMapping("/list")
     public ResponseEntity<Result> getList(
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize) {
-        return photographerService.getList(pageNum, pageSize);
+            @RequestParam(defaultValue = "10") int pageSize,
+            HttpServletRequest request) {
+            String currentUserId = tryGetUserId(request);
+        return photographerService.getList(pageNum, pageSize, keyword,currentUserId);
     }
     @PostMapping("/enroll")
     public ResponseEntity<Result> enroll(@RequestParam String inviteCode, HttpServletRequest request) {
@@ -52,10 +55,6 @@ public class PhotographerController {
         return user.getCasId();
     }
 
-    @GetMapping("/search")
-    public ResponseEntity<Result> search(@RequestParam String keyword, HttpServletRequest request) {
-        return photographerService.searchPhotographers(getUserIdFromToken(request), keyword);
-    }
 
     @GetMapping("/search/suggest")
     public ResponseEntity<Result> suggest(@RequestParam String keyword) {
@@ -83,5 +82,16 @@ public class PhotographerController {
     @GetMapping("/ranking/ratings")
     public ResponseEntity<Result> getRatingRanking(@RequestParam(required = false) Integer limit) {
         return photographerService.getRatingRanking(limit);
+    }
+
+    private String tryGetUserId(HttpServletRequest request) {
+        try {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7);
+                return JwtUtil.getClaim(token, DEFAULT_JWT_KEY).getCasId();
+            }
+        } catch (Exception ignored) {}
+        return null;
     }
 }

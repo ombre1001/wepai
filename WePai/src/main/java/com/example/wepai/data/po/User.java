@@ -23,6 +23,8 @@ public class User {
      private Integer sex;
      private String phone;
      private String detail;
+     private Boolean agreement;
+     private Integer status;
     public User(String casId, String name) {
         this.casId = casId;
         this.name = name;

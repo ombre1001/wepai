@@ -32,6 +32,8 @@ public class JwtUtil {
     private static final String CLAIM_KEY_CAS_ID = "casID";
 
     private static final String CLAIM_KEY_NAME = "name";
+
+    private static final String CLAIM_KEY_ROLE = "role";
     private static final long LONG_TERM_EXPIRE = 30L * 24 * 60 * 60 * 1000;
 
     // 十秒过期
@@ -82,18 +84,38 @@ public class JwtUtil {
                 .compact();
     }
 
+    public static String generateWithRole(String key, String casID, String name, Integer role) {
+        SecretKey secretKey = generateSecretKey(key);
+        return Jwts.builder()
+                .header().add("type", "JWT")
+                .and()
+                .claim(CLAIM_KEY_CAS_ID, casID)
+                .claim(CLAIM_KEY_NAME, name)
+                .claim(CLAIM_KEY_ROLE, role) // 将 role 打包进 token
+                .expiration(new Date(System.currentTimeMillis() + expire))
+                .signWith(secretKey, ALGORITHM)
+                .compact();
+    }
+
     //解析token，得到包装的casId
     public static User getClaim(String token, String key){
         SecretKey secretKey = generateSecretKey(key);
         try {
-             Claims claims = Jwts.parser()
+            Claims claims = Jwts.parser()
                     .verifyWith(secretKey)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-             String casID = claims.get(CLAIM_KEY_CAS_ID, String.class);
-             String name = claims.get(CLAIM_KEY_NAME, String.class);
-             return new User(casID, name);
+            String casID = claims.get(CLAIM_KEY_CAS_ID, String.class);
+            String name = claims.get(CLAIM_KEY_NAME, String.class);
+            Integer role = claims.get(CLAIM_KEY_ROLE, Integer.class);
+
+            User user = new User(casID, name);
+            // 假设你的 User 实体类有 setRole 方法
+            if (role != null) {
+                user.setRole(role);
+            }
+            return user;
         } catch (JwtException | IllegalArgumentException e) {
             return null;
         }

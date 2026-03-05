@@ -16,37 +16,46 @@ public interface PhotographerMapper extends BaseMapper<Photographer> {
     @Select("SELECT COALESCE(AVG(score), 0) FROM ratings WHERE target_id = #{casId}")
     Double getAverageScore(@Param("casId") String casId);
 
-    // 联合查询获取摄影师列表（包含User基础信息）
-    @Select("SELECT u.cas_id, u.nickname, u.avatar_url, p.type, p.order_count " +
-            "FROM user u JOIN photographer p ON u.cas_id = p.cas_id " +
-            "WHERE u.role = 2")
-    List<Map<String, Object>> getPhotographerList();
 
 
-    @Select("SELECT p.cas_id, p.style, p.equipment, p.type, " +
-            "(SELECT COUNT(*) FROM orders WHERE photographer_id = p.cas_id AND status = 3) as orderCount " +
-            "FROM photographer p WHERE p.cas_id = #{casId}")
+
+    @Select("""
+            SELECT p.cas_id, p.style, p.equipment, p.type, 
+            (SELECT COUNT(*) FROM orders WHERE photographer_id = p.cas_id AND status = 3) as orderCount 
+            FROM photographer p WHERE p.cas_id = #{casId}
+            """)
     @Results({
             @Result(column = "cas_id", property = "casId", id = true),
-            @Result(column = "style", property = "style"),
-            @Result(column = "equipment", property = "equipment"),
-            @Result(column = "type", property = "type"),
-            @Result(column = "orderCount", property = "orderCount") // 对应子查询结果
+            // ★ 为数组字段显式指定 typeHandler
+            @Result(column = "style", property = "style", typeHandler = com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler.class),
+            @Result(column = "equipment", property = "equipment", typeHandler = com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler.class),
+            @Result(column = "type", property = "type", typeHandler = com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler.class),
+            @Result(column = "orderCount", property = "orderCount")
     })
     Photographer getPhotographerById(@Param("casId") String casId);
 
-    // 2. 核心修复：使用 ON DUPLICATE KEY UPDATE 解决 400 冲突报错
-    // 即使记录已存在，也只会执行更新而不会报错
-    @Insert("INSERT INTO photographer (cas_id, style, equipment, type) " +
-            "VALUES (#{casId}, #{style}, #{equipment}, #{type}) " +
-            "ON DUPLICATE KEY UPDATE " +
-            "style = #{style}, equipment = #{equipment}, type = #{type}")
+    @Insert("""
+        <script>
+        INSERT INTO photographer (
+            cas_id
+            <if test="style != null">, style</if>
+            <if test="equipment != null">, equipment</if>
+            <if test="type != null">, type</if>
+        ) VALUES (
+            #{casId}
+            <if test="style != null">, #{style, typeHandler=com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler}</if>
+            <if test="equipment != null">, #{equipment, typeHandler=com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler}</if>
+            <if test="type != null">, #{type, typeHandler=com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler}</if>
+        )
+        ON DUPLICATE KEY UPDATE 
+            cas_id = #{casId} <if test="style != null">, style = #{style, typeHandler=com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler}</if>
+            <if test="equipment != null">, equipment = #{equipment, typeHandler=com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler}</if>
+            <if test="type != null">, type = #{type, typeHandler=com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler}</if>
+        </script>
+        """)
     int upsertPhotographer(Photographer photographer);
 
-    @Select("SELECT u.cas_id, u.nickname, u.avatar_url, p.type, p.style " +
-            "FROM user u JOIN photographer p ON u.cas_id = p.cas_id " +
-            "WHERE u.role = 2 AND (u.nickname LIKE CONCAT('%',#{keyword},'%') OR p.style LIKE CONCAT('%',#{keyword},'%'))")
-    List<Map<String, Object>> searchPhotographers(@Param("keyword") String keyword);
+
 
     // 实时建议：只查昵称
     @Select("SELECT u.nickname FROM user u WHERE u.role = 2 AND u.nickname LIKE CONCAT('%',#{keyword},'%') LIMIT 8")
@@ -68,7 +77,7 @@ public interface PhotographerMapper extends BaseMapper<Photographer> {
             JOIN user u ON u.cas_id = p.cas_id
             LEFT JOIN orders o 
                 ON o.photographer_id = p.cas_id 
-               AND o.status = 3   -- 只统计已完成订单
+               AND o.status IN (3, 4)   -- 只统计已完成订单
             WHERE u.role = 2
             GROUP BY u.cas_id, u.nickname, u.avatar_url, p.type
             ORDER BY orderCount DESC
@@ -87,23 +96,27 @@ public interface PhotographerMapper extends BaseMapper<Photographer> {
                 u.nickname,
                 u.avatar_url,
                 p.type,
-                COALESCE(AVG(r.score), 0) AS avgScore,
-                COUNT(r.rating_id)        AS ratingCount
+                COALESCE(AVG(r.score), 0) AS avgScore
             FROM photographer p
             JOIN user u ON u.cas_id = p.cas_id
             LEFT JOIN ratings r 
                 ON r.target_id = p.cas_id
             WHERE u.role = 2
             GROUP BY u.cas_id, u.nickname, u.avatar_url, p.type
-            ORDER BY avgScore DESC, ratingCount DESC
+            ORDER BY avgScore DESC
             LIMIT #{limit}
             """)
     List<Map<String, Object>> getRatingRanking(@Param("limit") int limit);
 
-    @Select("SELECT u.cas_id, u.nickname, u.avatar_url, p.type, p.order_count " +
+    @Select("SELECT u.cas_id, u.nickname, u.avatar_url, p.type, p.style,p.equipment, p.order_count " +
             "FROM user u JOIN photographer p ON u.cas_id = p.cas_id " +
-            "WHERE u.role = 2")
-    List<Map<String, Object>> getPhotographerListPaged(Page<?> page);
+            "WHERE u.role = 2 " +
+            // 新增 keyword 判断：匹配昵称或摄影风格
+            "AND (#{keyword} IS NULL OR u.nickname LIKE CONCAT('%',#{keyword},'%') OR p.style LIKE CONCAT('%',#{keyword},'%'))")
+    List<Map<String, Object>> getPhotographerListPaged(Page<?> page, @Param("keyword") String keyword);
+
+    @Delete("DELETE FROM photographer WHERE cas_id = #{casId}")
+    int deletePhotographerRecord(@Param("casId") String casId);
 
 
 }

@@ -1,5 +1,6 @@
 package com.example.wepai.service;
 
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.wepai.data.dto.DraftListDTO;
 import com.example.wepai.data.dto.OrderDTO;
@@ -7,16 +8,19 @@ import com.example.wepai.data.dto.RatingDTO;
 import com.example.wepai.data.po.Order;
 import com.example.wepai.data.po.Photographer;
 import com.example.wepai.data.po.Rating;
+import com.example.wepai.data.po.User;
 import com.example.wepai.data.vo.Result;
 import com.example.wepai.mapper.OrderMapper;
 import com.example.wepai.mapper.PhotographerMapper;
 import com.example.wepai.mapper.RatingMapper;
+import com.example.wepai.mapper.UserMapper;
 import jakarta.annotation.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +34,8 @@ public class OrderService {
     private RatingMapper ratingMapper;
     @Resource
     private PhotographerMapper photographerMapper;
+    @Resource
+    private UserMapper userMapper;
 
     @Transactional(rollbackFor = Exception.class)
     public ResponseEntity<Result> saveDraft(String customerId, OrderDTO dto) {
@@ -40,6 +46,11 @@ public class OrderService {
                 return Result.error("草稿不存在或无权操作");
             }
         } else {
+            Page<DraftListDTO> countPage = new Page<>(1, 10); // 只需要看有没有 5 个
+            List<DraftListDTO> existingDrafts = orderMapper.selectDraftListPaged(countPage, customerId);
+            if (existingDrafts != null && existingDrafts.size() >= 5) {
+                return Result.error("草稿箱已满（最多存储5个），请删除部分草稿后再试");
+            }
             order = new Order();
             order.setCustomerId(customerId);
             order.setCreatedAt(LocalDateTime.now());
@@ -53,7 +64,7 @@ public class OrderService {
         order.setCreatedAt(LocalDateTime.now());
 
         if (order.getOrderId() != null) {
-            orderMapper.updateById(order);
+            orderMapper.updateOrderManual(order);
         } else {
             orderMapper.insertOrder(order); // 使用你自定义的插入方法
         }
@@ -122,7 +133,7 @@ public class OrderService {
         Order order;
         // 如果是把现有的草稿转为正式订单
         if (dto.getOrderId() != null) {
-            order = orderMapper.selectById(dto.getOrderId());
+            order = orderMapper.getOrderById(dto.getOrderId());
             if (order == null) return Result.error("订单不存在");
         } else {
             order = new Order();
@@ -142,7 +153,7 @@ public class OrderService {
         }
 
         if (order.getOrderId() != null) {
-            orderMapper.updateById(order);
+            orderMapper.updateOrderManual(order);
         } else {
             orderMapper.insertOrder(order);
         }
@@ -174,13 +185,33 @@ public class OrderService {
         }
     }
 
-    // 获取列表
-    public ResponseEntity<Result> getMyOrders(String casId, String roleIdentity) {
-        if ("photographer".equalsIgnoreCase(roleIdentity)) {
-            return Result.success(orderMapper.selectOrdersByPhotographer(casId), "获取成功");
-        } else {
-            return Result.success(orderMapper.selectOrdersByCustomer(casId), "获取成功");
-        }
+    public ResponseEntity<Result> getMyOrders(String userId, Integer status, int pageNum, int pageSize) {
+        Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
+
+        // 1. 查询所有相关订单
+        List<Map<String, Object>> list = orderMapper.selectAllMyOrders(page, userId, status);
+
+        // 2. 遍历列表，添加身份标识
+        list.forEach(item -> {
+            // 使用 String.valueOf() 安全地将 Long 转换为 String
+            // 或者先获取 Object 再进行判断
+            Object dbCustomerId = item.get("customer_id");
+            String customerIdStr = dbCustomerId == null ? "" : String.valueOf(dbCustomerId);
+
+            // 同样，确保 userId 也是字符串进行比较
+            if (String.valueOf(userId).equals(customerIdStr)) {
+                item.put("isMyOrderAsCustomer", true);
+            } else {
+                item.put("isMyOrderAsCustomer", false);
+            }
+        });
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", list);
+        data.put("total", page.getTotal());
+        data.put("pages", page.getPages());
+
+        return Result.success(data, "获取订单列表成功");
     }
 
     // 订单状态流转
@@ -223,9 +254,11 @@ public class OrderService {
                 break;
 
             case "DELIVER":
-                // 只有当前摄影师能交付
                 if (!isPhotographer) return Result.error("无权操作");
                 if (order.getStatus() != 2) return Result.error("非进行中状态");
+
+                // 因为 dto 和 order 里的 deliverUrl 都变成了 List<String>，直接 set 过去即可
+                // MyBatis 存入数据库时会自动变成 '["url1", "url2"]'
                 order.setDeliverUrl(dto.getDeliverUrl());
                 order.setStatus(3);
                 break;
@@ -239,39 +272,50 @@ public class OrderService {
     }
 
     // 评价订单
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public ResponseEntity<Result> rateOrder(String userId, RatingDTO dto) {
+        // 1. 校验订单是否存在及归属（使用你之前定义的查询方法）
         Order order = orderMapper.getOrderById(dto.getOrderId());
-
-        // 只有状态3 (已完成) 且相关人员才能评价
-        if (order == null || order.getStatus() != 3) {
-            return Result.error("订单未完成，无法评价");
-        }
-        if (!userId.equals(order.getCustomerId()) && !userId.equals(order.getPhotographerId())) {
-            System.out.println(order.getCustomerId() + " " + userId + " " + order.getPhotographerId());
-            return Result.error("非订单相关人员");
+        if (order == null || !order.getCustomerId().equals(userId)) {
+            return Result.error("订单不存在或无权评价");
         }
 
+        // （可选）校验订单状态是否允许评价，例如 status == 3 才允许评价
+        if (order.getStatus() != 3) {
+            return Result.error("当前订单状态不允许评价");
+        }
+
+        // 2. 核心逻辑：计算平均分 (保留一位小数)
+        // 注意要转成 double 进行计算，否则整数除法会丢失精度
+        double rawAvg = (dto.getPhotoScore() + dto.getTimeScore() + dto.getCommScore()) / 3.0;
+        double finalScore = Math.round(rawAvg * 10.0) / 10.0; // 例如 13/3 = 4.333 -> 4.3
+
+        // 3. 构建评价实体
         Rating rating = new Rating();
-        rating.setOrderId(order.getOrderId());
+        rating.setOrderId(dto.getOrderId());
         rating.setReviewerId(userId);
         rating.setTargetId(order.getPhotographerId());
-        rating.setScore(dto.getScore());
+
+        // 塞入三个维度的分数和计算出的总分
+        rating.setPhotoScore(dto.getPhotoScore());
+        rating.setTimeScore(dto.getTimeScore());
+        rating.setCommScore(dto.getCommScore());
+        rating.setScore(finalScore);
+
         rating.setContent(dto.getContent());
-        rating.setCreatedAt(LocalDateTime.now());
 
+        // 4. 插入评价数据
+        ratingMapper.insertRating(rating);
 
-        try {
-            ratingMapper.insertRating(rating);
-            Map<String, Object> resMap = new HashMap<>();
-            resMap.put("ratingId", rating.getRatingId());
-            resMap.put("createTime", rating.getCreatedAt());
+        // 5. 更新订单状态为已评价（假设 4 代表已完成/已评价）
+        order.setStatus(4);
+        orderMapper.updateOrderManual(order); // 使用你之前手写的更新方法
+        Map<String, Object> resMap = new HashMap<>();
+        resMap.put("ratingId", rating.getRatingId());
+        resMap.put("createTime", rating.getCreatedAt());
 
-            return Result.success(resMap, "评价发布成功");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Result.error("数据库操作失败: " + e.getMessage());
-        }
+        return Result.success(resMap, "评价成功！");
+
     }
 
     public ResponseEntity<Result> getLobbyOrders(int pageNum, int pageSize) {
@@ -279,7 +323,7 @@ public class OrderService {
         Page<Order> page = new Page<>(pageNum, pageSize);
 
         // 查询
-        List<Order> list = orderMapper.selectLobbyOrdersPaged(page);
+        List<Map<String, Object>> list = orderMapper.selectLobbyOrdersPaged(page);
 
         // 封装返回
         Map<String, Object> data = new HashMap<>();
@@ -288,6 +332,37 @@ public class OrderService {
         data.put("pages", page.getPages());
 
         return Result.success(data, "获取大厅订单成功");
+    }
+
+    public ResponseEntity<Result> getOrderDetail( Long orderId) {
+        Map<String, Object> detail = orderMapper.selectOrderDetailFull(orderId);
+
+        if (detail == null) {
+            return Result.error("订单不存在");
+        }
+
+
+        Object deliverUrlObj = detail.get("deliver_url");
+        if (deliverUrlObj != null) {
+            String deliverUrlStr = String.valueOf(deliverUrlObj);
+            if (deliverUrlStr.startsWith("[")) {
+                try {
+
+                    List<String> urls = JSONUtil.toList(deliverUrlStr, String.class);
+                    detail.put("deliver_url", urls);
+                } catch (Exception e) {
+                    detail.put("deliver_url", new ArrayList<>());
+                }
+            } else if (!deliverUrlStr.isBlank()) {
+                detail.put("deliver_url", List.of(deliverUrlStr));
+            } else {
+                detail.put("deliver_url", new ArrayList<>());
+            }
+        } else {
+            detail.put("deliver_url", new ArrayList<>());
+        }
+
+        return Result.success(detail, "获取订单详情成功");
     }
 
     private void copyDtoToOrder(OrderDTO dto, Order order) {
@@ -302,36 +377,88 @@ public class OrderService {
         order.setRemark(dto.getRemark());
     }
 
-    public ResponseEntity<Result> getPendingOrders(String photographerId) {
-        List<Map<String, Object>> list = orderMapper.selectPendingOrdersForPhotographer(photographerId);
-        return Result.success(list, "获取待处理订单成功");
+    public ResponseEntity<Result> getPendingOrders(String photographerId, int pageNum, int pageSize) {
+        Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
+
+        List<Map<String, Object>> list = orderMapper.selectPendingOrdersForPhotographer(page, photographerId);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", list);
+        data.put("total", page.getTotal());  // 总记录数
+        data.put("pages", page.getPages());  // 总页数
+
+        return Result.success(data, "获取待处理订单成功");
+    }
+    /**
+     * 通过订单ID获取评价
+     */
+    public ResponseEntity<Result> getReviewByOrderId(Long orderId) {
+        Map<String, Object> review = orderMapper.selectReviewByOrderId(orderId);
+
+        if (review == null) {
+            return Result.error("该订单暂无评价");
+        }
+
+        return Result.success(review, "获取订单评价成功");
+    }
+
+    public ResponseEntity<Result> getAcceptedOrders(String photographerId, int pageNum, int pageSize) {
+        // 1. 初始化分页对象
+        Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
+
+        // 2. 执行查询
+        List<Map<String, Object>> list = orderMapper.selectAcceptedOrdersForPhotographer(page, photographerId);
+
+        // 3. 封装返回数据
+        Map<String, Object> data = new HashMap<>();
+        data.put("list", list);
+        data.put("total", page.getTotal());
+        data.put("pages", page.getPages());
+
+        return Result.success(data, "获取已接订单成功");
     }
 
     /**
      * 公开的作品展示列表
      */
-    public ResponseEntity<Result> getPublicGallery(int pageNum, int pageSize) {
-        Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
-        List<Map<String, Object>> list = orderMapper.selectPublicGallery(page);
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("list", list);
-        data.put("total", page.getTotal());
-        return Result.success(data, "获取作品广场成功");
-    }
 
-    /**
-     * 公开查询：获取指定摄影师的作品集
-     */
-    public ResponseEntity<Result> getPhotographerWorksPublic(String photographerId, int pageNum, int pageSize) {
+    public ResponseEntity<Result> getWorks(String photographerId, int pageNum, int pageSize) {
         Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
-        List<Map<String, Object>> list = orderMapper.selectPhotographerWorks(page, photographerId);
+        List<Map<String, Object>> list = orderMapper.selectWorksCombined(page, photographerId);
+
+        list.forEach(item -> {
+            // 1. 统一处理交付图：只取第一张作为封面展示
+            Object rawData = item.get("deliverUrl"); // 经过 TypeHandler 已经是 List 或 String
+            String firstUrl = "";
+
+            if (rawData instanceof List) {
+                List<?> urls = (List<?>) rawData;
+                if (!urls.isEmpty()) firstUrl = String.valueOf(urls.get(0));
+            } else if (rawData instanceof String) {
+                String str = (String) rawData;
+                if (str.startsWith("[")) {
+                    List<String> urls = JSONUtil.toList(str, String.class);
+                    if (!urls.isEmpty()) firstUrl = urls.get(0);
+                } else {
+                    firstUrl = str;
+                }
+            }
+
+            // 2. 规范化返回字段，移除多余字段
+            item.put("cover_url", firstUrl);
+            item.remove("deliverUrl");
+            item.remove("deliver_url");
+            item.remove("customer_id"); // 安全起见移除顾客ID
+        });
 
         Map<String, Object> data = new HashMap<>();
         data.put("list", list);
         data.put("total", page.getTotal());
         data.put("pages", page.getPages());
 
-        return Result.success(data, "获取摄影师作品成功");
+        String msg = (photographerId == null) ? "获取作品广场成功" : "获取摄影师作品集成功";
+        return Result.success(data, msg);
     }
+
 }

@@ -1,5 +1,6 @@
 package com.example.wepai.controller;
 
+import com.example.wepai.data.dto.FeedbackDTO;
 import com.example.wepai.data.dto.UserUpdateDTO;
 import com.example.wepai.data.vo.Result;
 import com.example.wepai.service.UserService;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     @Resource
     private UserService userService;
+
 
 
 
@@ -56,6 +58,23 @@ public class UserController {
             throw new RuntimeException("Token无效或已过期");
         }
         return user.getCasId();
+    }
+
+    @GetMapping("/announcements")
+    public ResponseEntity<Result> getAnnouncements() {
+        return userService.getAnnouncements();
+    }
+
+    @PostMapping("/feedback")
+    public ResponseEntity<Result> submitFeedback(@RequestBody FeedbackDTO dto, HttpServletRequest request) {
+        String userId = getUserIdFromToken(request); // 假设你已有的解析方法
+        return userService.submitFeedback(userId, dto);
+    }
+
+    @GetMapping("/feedback/my")
+    public ResponseEntity<Result> getMyFeedback(HttpServletRequest request) {
+        String userId = getUserIdFromToken(request);
+        return userService.getMyFeedbacks(userId);
     }
 }
 

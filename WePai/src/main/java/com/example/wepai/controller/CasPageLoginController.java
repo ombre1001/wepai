@@ -37,41 +37,41 @@ public class CasPageLoginController {
     }
 
     /**
-     * 统一认证登入页面重定向代理接口
+     * 统一认证登入页面重定向代理接口 @CrossOrigin
+     *     @SneakyThrows
+     *     @RequestMapping("/login/page")
+     *     public void casLogin(
+     *             @RequestParam(defaultValue = CasPageLogin.DEFAULT_FORWARD) String forward,
+     *             @RequestParam(required = false) String ticket,
+     *             HttpServletResponse response) {
+     *         // 根据重定向api获取该api设定的加密jwt的key
+     *         String key = allowApiTable.get(forward);
+     *
+     *         // 如果key==null，说明该重定向网站没注册过，拒绝统一认证登入请求
+     *         if (key == null) {
+     *             forward = CasPageLogin.DEFAULT_FORWARD;
+     *             key = "";
+     *         }
+     *
+     *         // 统一认证登入检查
+     *         CasPageLogin.Result result = CasPageLogin.login(ticket, forward);
+     *
+     *         // 如果ticket有效
+     *         if (result.validate()) {
+     *             String token = JwtUtil.generate(key, result.casId(), result.name());
+     *             // 登入成功，在重定向api后面拼接上token
+     *             response.sendRedirect(result.redirect() + (result.redirect().contains("?") ? "&token=" : "?token=") + token);
+     *         } else {
+     *             // 直接重定向
+     *             response.sendRedirect(result.redirect());
+     *         }
+     *
+     *     }
      *
      * @param ticket 统一认证登入发放的ticket
      * @param forward 统一认证登入成功后的回调接口
      */
-    @CrossOrigin
-    @SneakyThrows
-    @RequestMapping("/login/page")
-    public void casLogin(
-            @RequestParam(defaultValue = CasPageLogin.DEFAULT_FORWARD) String forward,
-            @RequestParam(required = false) String ticket,
-            HttpServletResponse response) {
-        // 根据重定向api获取该api设定的加密jwt的key
-        String key = allowApiTable.get(forward);
 
-        // 如果key==null，说明该重定向网站没注册过，拒绝统一认证登入请求
-        if (key == null) {
-            forward = CasPageLogin.DEFAULT_FORWARD;
-            key = "";
-        }
-
-        // 统一认证登入检查
-        CasPageLogin.Result result = CasPageLogin.login(ticket, forward);
-
-        // 如果ticket有效
-        if (result.validate()) {
-            String token = JwtUtil.generate(key, result.casId(), result.name());
-            // 登入成功，在重定向api后面拼接上token
-            response.sendRedirect(result.redirect() + (result.redirect().contains("?") ? "&token=" : "?token=") + token);
-        } else {
-            // 直接重定向
-            response.sendRedirect(result.redirect());
-        }
-
-    }
 
 
     /**
@@ -82,7 +82,7 @@ public class CasPageLoginController {
     @ResponseBody
     @SneakyThrows
     @RequestMapping("/login")
-    public String login(@RequestParam String token, HttpServletResponse response) {
+    public String login(@RequestParam String token, @RequestParam(required = false) String platform,HttpServletResponse response) {
         // 存储在服务器上的key应该和存储在服务器上的key相同
         String key = ">U@Oa@U7Xew3!E.TQs*TD)P*7nWktUz(m=ar!k&6{QYcLTGLc+W8|u2#VYX8S6<:";
 
@@ -98,15 +98,30 @@ public class CasPageLoginController {
             userMapper.insertUser(user);
             String localLongTermToken = JwtUtil.generateLongTerm(key, user.getCasId(), user.getName());
 
+            User dbUser = userMapper.selectUsersStatus(user.getCasId());
             // 4. 将本地生成的长效 Token 重定向给前端
             String casId = URLEncoder.encode(user.getCasId(), StandardCharsets.UTF_8);
             String name = URLEncoder.encode(user.getName(), StandardCharsets.UTF_8);
+            Integer status = dbUser.getStatus();
 
-            // 注意：这里传回前端的是 localLongTermToken
-            response.sendRedirect("http://localhost:5173"
-                    + "?casId=" + casId
-                    + "&name=" + name
-                    + "&token=" + localLongTermToken);
+            String targetUrl;
+            if ("mobile".equalsIgnoreCase(platform)) {
+                // 移动端：使用 Deep Link 协议（需在 App 中配置 wepai 协议）
+                targetUrl = "wepai://auth_callback"
+                        + "?casId=" + casId
+                        + "&name=" + name
+                        + "&status=" + status
+                        + "&token=" + localLongTermToken;
+            } else {
+                // Web端：保持原有逻辑
+                targetUrl = "http://localhost:5173"
+                        + "?casId=" + casId
+                        + "&name=" + name
+                        + "&status=" + status
+                        + "&token=" + localLongTermToken;
+            }
+
+            response.sendRedirect(targetUrl);
             return null;
         }
     }

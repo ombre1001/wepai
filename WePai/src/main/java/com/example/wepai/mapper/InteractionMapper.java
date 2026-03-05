@@ -29,8 +29,14 @@ public interface InteractionMapper {
     // --- 评论相关 ---
     @Insert("INSERT INTO post_comments (post_id, user_id, content, created_at) " +
             "VALUES (#{comment.postId}, #{comment.userId}, #{comment.content}, #{comment.createdAt})")
-    @Options(useGeneratedKeys = true, keyProperty = "comment.id") // 注意：这里的 keyProperty 对应 PO 中的 id 字段
+    @Options(useGeneratedKeys = true, keyProperty = "comment.id")
     int insertComment(@Param("comment") PostComment comment);
+
+    @Delete("DELETE FROM post_comments WHERE id = #{id} AND user_id = #{userId}")
+    int deleteComment(@Param("id") Long id, @Param("userId") String userId);
+
+    @Select("SELECT user_id FROM post_comments WHERE id = #{id}")
+    String getCommentAuthorId(@Param("id") Long id);
 
     // 获取某帖子的评论列表（包含评论者的昵称和头像）
     @Select("SELECT c.*, u.nickname, u.avatar_url FROM post_comments c " +
@@ -44,4 +50,27 @@ public interface InteractionMapper {
             "WHERE c.post_id = #{postId} " +
             "ORDER BY c.created_at DESC")
     List<Map<String, Object>> selectCommentsByPostIdPaged(Page<?> page, @Param("postId") Long postId);
+
+    // 管理员强制删除评论（无 userId 校验）
+    @Delete("DELETE FROM post_comments WHERE id = #{commentId}")
+    int deleteCommentForce(@Param("commentId") Long commentId);
+
+    @Select("""
+        SELECT 
+            c.id as commentId, 
+            c.post_id as postId, 
+            c.content, 
+            c.created_at as createdAt,
+            u.nickname as userName, 
+            u.avatar_url as userAvatar,
+            p.title as postTitle
+        FROM post_comments c
+        LEFT JOIN user u ON c.user_id = u.cas_id
+        LEFT JOIN posts p ON c.post_id = p.post_id
+        ORDER BY c.created_at DESC
+        """)
+    List<Map<String, Object>> selectAllCommentsAdmin(Page<?> page);
 }
+
+
+

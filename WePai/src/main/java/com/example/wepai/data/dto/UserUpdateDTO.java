@@ -2,12 +2,15 @@ package com.example.wepai.data.dto;
 
 import lombok.Data;
 
+import java.util.List;
+
 public class UserUpdateDTO {
     private String nickname;
     private String avatarUrl; // 新增头像修改支持
     private Integer sex;
     private String phone;
     private String detail;
+    private Boolean agreement;
 
 
 
@@ -26,6 +29,9 @@ public class UserUpdateDTO {
     public String getDetail() { return detail; }
     public void setDetail(String detail) { this.detail = detail; }
 
+    public Boolean getAgreement() { return agreement; }
+    public void setAgreement(Boolean agreement) { this.agreement = agreement; }
+
     private PhotographerDTO photographer;
 
     public PhotographerDTO getPhotographer() {
@@ -34,8 +40,8 @@ public class UserUpdateDTO {
 
     @Data
     public static class PhotographerDTO {
-        private String style;
-        private String equipment;
-        private String type;
+        private List<String> style;     // 改为 List
+        private List<String> equipment; // 改为 List
+        private List<String> type;
     }
 }

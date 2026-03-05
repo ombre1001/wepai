@@ -27,10 +27,23 @@ public class PhotographerService {
     private SearchMapper searchMapper;
 
     // 获取摄影师列表
-    public ResponseEntity<Result> getList(int pageNum, int pageSize) {
-        Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
-        List<Map<String, Object>> list = photographerMapper.getPhotographerListPaged(page);
+    public ResponseEntity<Result> getList(int pageNum, int pageSize, String keyword, String userId) {
+        if (keyword != null && keyword.isBlank()) {
+            keyword = null;
+        }
+        if (keyword != null && userId != null) {
+            searchMapper.insertHistory(userId, keyword, "photographer");
+        }
 
+        // 3. 分页查询
+        Page<Map<String, Object>> page = new Page<>(pageNum, pageSize);
+        List<Map<String, Object>> list = photographerMapper.getPhotographerListPaged(page, keyword);
+
+        list.forEach(item -> {
+            parseJsonField(item, "style");
+            parseJsonField(item, "equipment");
+            parseJsonField(item, "type");
+        });
         Map<String, Object> data = new HashMap<>();
         data.put("list", list);
         data.put("total", page.getTotal());
@@ -73,12 +86,6 @@ public class PhotographerService {
         }
     }
 
-    public ResponseEntity<Result> searchPhotographers(String userId, String keyword) {
-        if (keyword != null && !keyword.isBlank()) {
-            searchMapper.insertHistory(userId, keyword, "photographer");
-        }
-        return Result.success(photographerMapper.searchPhotographers(keyword), "搜索完成");
-    }
 
     public List<String> getSuggestions(String keyword) {
         return photographerMapper.getSuggestions(keyword);
@@ -106,6 +113,16 @@ public class PhotographerService {
     public ResponseEntity<Result> getRatingRanking(Integer limit) {
         int size = (limit == null || limit <= 0) ? 10 : Math.min(limit, 100);
         return Result.success(photographerMapper.getRatingRanking(size), "获取评分排行榜成功");
+    }
+
+    private void parseJsonField(Map<String, Object> item, String fieldName) {
+        Object val = item.get(fieldName);
+        if (val instanceof String && ((String) val).startsWith("[")) {
+            try {
+                item.put(fieldName, cn.hutool.json.JSONUtil.toList((String) val, String.class));
+            } catch (Exception ignored) {
+            }
+        }
     }
 
 }

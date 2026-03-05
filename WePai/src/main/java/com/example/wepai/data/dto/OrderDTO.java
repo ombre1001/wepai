@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class OrderDTO {
@@ -26,5 +27,5 @@ public class OrderDTO {
     // --- 操作时使用 ---
     private Long orderId;
     private String action; // ACCEPT, REJECT, PAY, DELIVER, COMPLETE
-    private String deliverUrl;
+    private List<String> deliverUrl;
 }

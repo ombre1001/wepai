@@ -15,6 +15,9 @@ public class Rating {
     private Long orderId;       // 关联订单
     private String reviewerId;  // 评价人
     private String targetId;    // 被评价人
+    private Integer photoScore;
+    private Integer timeScore;
+    private Integer commScore;
     private Double score;       // 评分 (1.0 - 5.0)
     private String content;     // 评价内容
 

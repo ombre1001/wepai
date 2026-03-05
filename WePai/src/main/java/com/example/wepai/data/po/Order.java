@@ -1,8 +1,10 @@
 package com.example.wepai.data.po;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,11 +12,12 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("orders")
+@TableName(value = "orders", autoResultMap = true)
 public class Order {
     @TableId(type = IdType.AUTO)
     private Long orderId;
@@ -36,11 +39,12 @@ public class Order {
     private String remark;
 
     /**
-     * 0: 待接单, 1: 待支付, 2: 进行中, 3: 已完成, -1: 取消, -2: 拒绝，-3:草稿
+     * 0: 待接单, 1: 已接单, 2: 支付中, 3: 已完成, -1: 取消, -2: 拒绝，-3:草稿
      */
     private Integer status;
     private Integer paymentStatus;
-    private String deliverUrl;
+    @ TableField(typeHandler = JacksonTypeHandler.class)
+    private List<String> deliverUrl;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;

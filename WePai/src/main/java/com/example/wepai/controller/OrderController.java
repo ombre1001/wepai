@@ -20,8 +20,8 @@ import java.util.List;
 import static com.example.wepai.controller.UserController.DEFAULT_JWT_KEY;
 
 @RestController
-@RequestMapping("/order")
 @CrossOrigin
+@RequestMapping("/order")
 public class OrderController {
 
     @Resource
@@ -50,11 +50,36 @@ public class OrderController {
         return orderService.getLobbyOrders(pageNum, pageSize);
     }
 
+    @GetMapping("/accepted")
+    public ResponseEntity<Result> getAcceptedOrders(
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "10") int pageSize,
+            HttpServletRequest request) {
+
+        // 建议：从 Token 中获取当前登录的摄影师 ID，防止越权查询
+        String photographerId = getUserIdFromToken(request);
+
+        return orderService.getAcceptedOrders(photographerId, pageNum, pageSize);
+    }
+
+    /**
+     * 获取指定订单的评价内容
+     * GET /orders/review/detail?orderId=1024
+     */
+    @GetMapping("/review/detail")
+    public ResponseEntity<Result> getReviewDetail(@RequestParam Long orderId) {
+        return orderService.getReviewByOrderId(orderId);
+    }
+
     // 获取我的订单
     @GetMapping("/list")
-    public ResponseEntity<Result> list(@RequestParam String identity, HttpServletRequest request) {
-        String casId = getUserIdFromToken(request);
-        return orderService.getMyOrders(casId, identity);
+    public ResponseEntity<Result> list(@RequestParam(required = false) Integer status,
+                                       @RequestParam(defaultValue = "1") int pageNum,
+                                       @RequestParam(defaultValue = "10") int pageSize,
+                                       HttpServletRequest request) {
+
+        String userId = getUserIdFromToken(request);
+        return orderService.getMyOrders(userId, status, pageNum, pageSize);
     }
 
     // 订单操作 (接单/拒单/支付/交付)
@@ -71,9 +96,10 @@ public class OrderController {
         return orderService.rateOrder(casId, dto);
     }
     @GetMapping("/photographer/pending")
-    public ResponseEntity<Result> getPendingOrders(HttpServletRequest request) {
+    public ResponseEntity<Result> getPendingOrders(HttpServletRequest request,@RequestParam(defaultValue = "1") int pageNum,
+                                                   @RequestParam(defaultValue = "10") int pageSize) {
         String userId = getUserIdFromToken(request);
-        return orderService.getPendingOrders(userId);
+        return orderService.getPendingOrders(userId, pageNum, pageSize);
     }
 
     private String getUserIdFromToken(HttpServletRequest request) {
@@ -87,19 +113,21 @@ public class OrderController {
         return user.getCasId();
     }
 
-    @GetMapping("/gallery")
-    public ResponseEntity<Result> getGallery(
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize) {
-        return orderService.getPublicGallery(pageNum, pageSize);
-    }
-
-    @GetMapping("/photographer/portfolio")
-    public ResponseEntity<Result> getPhotographerPortfolio(
-            @RequestParam String casId, // 前端从个人主页 URL 或点击处传入
+    @GetMapping("/works")
+    public ResponseEntity<Result> getWorks(
+            @RequestParam(required = false) String photographerId,
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "10") int pageSize) {
 
-        return orderService.getPhotographerWorksPublic(casId, pageNum, pageSize);
+        return orderService.getWorks(photographerId, pageNum, pageSize);
     }
+
+    @GetMapping("/{orderId}/detail")
+    public ResponseEntity<Result> getOrderDetail(
+            @PathVariable Long orderId) {
+
+
+        return orderService.getOrderDetail( orderId);
+    }
+
 }

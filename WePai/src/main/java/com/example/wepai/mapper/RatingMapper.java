@@ -10,8 +10,14 @@ import org.apache.ibatis.annotations.Options;
 
 @Mapper
 public interface RatingMapper extends BaseMapper<Rating> {
-    @Insert("INSERT INTO ratings (order_id, reviewer_id, target_id, score, content, created_at) " +
-            "VALUES (#{orderId}, #{reviewerId}, #{targetId}, #{score}, #{content}, #{createdAt})")
-    @Options(useGeneratedKeys = true, keyProperty = "ratingId")
+    @Insert("""
+        INSERT INTO ratings (
+            order_id, reviewer_id, target_id, 
+            photo_score, time_score, comm_score, score, content, created_at
+        ) VALUES (
+            #{orderId}, #{reviewerId}, #{targetId}, 
+            #{photoScore}, #{timeScore}, #{commScore}, #{score}, #{content}, NOW()
+        )
+        """)
     int insertRating(Rating rating);
 }

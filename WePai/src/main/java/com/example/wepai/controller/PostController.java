@@ -29,13 +29,54 @@ public class PostController {
         return postService.publish(casId, dto);
     }
 
-    // 获取帖子列表 (1-需求, 2-作品)
+    /**
+     * 获取列表（不强制 Token，但带了 Token 会显示 isLiked）
+     */
     @GetMapping("/posts")
     public ResponseEntity<Result> getPosts(
-            @RequestParam(required = false) String type, // 改为 String 类型
+            @RequestParam(required = false) Integer type,
+            @RequestParam(required = false) Integer status, // 新增 status 接收
+            @RequestParam(required = false) String casId,
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize) {
-        return postService.getList(type, pageNum, pageSize);
+            @RequestParam(defaultValue = "10") int pageSize,
+            HttpServletRequest request) {
+
+        String currentUserId = getUserIdFromToken(request);
+
+        // 传递 status 给 Service
+        return postService.getPostList(type, status, pageNum, pageSize, currentUserId, casId, keyword);
+    }
+
+    /**
+     * 获取帖子详情
+     * GET /square/detail/3
+     */
+    @GetMapping("/detail/{postId}")
+    public ResponseEntity<Result> getDetail(@PathVariable Long postId, HttpServletRequest request) {
+        String currentUserId = tryGetUserId(request);
+        return postService.getPostDetail(postId, currentUserId);
+    }
+
+    @GetMapping("/my-posts")
+    public ResponseEntity<Result> getMyPosts(
+            @RequestParam(required = false) Integer status, // 新增 status 接收
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "10") int pageSize,
+            HttpServletRequest request) {
+
+        String userId = getUserIdFromToken(request);
+
+        // 传递 status 给 Service
+        return postService.getMyPosts(userId, status, pageNum, pageSize);
+    }
+
+    @DeleteMapping("/posts/{postId}")
+    public ResponseEntity<Result> deletePost(@PathVariable Long postId, HttpServletRequest request) {
+        // 从 Token 解析出当前登录用户的 ID
+        String userId = getUserIdFromToken(request);
+
+        return postService.deleteMyPost(userId, postId);
     }
 
     @PostMapping("/like/{postId}")
@@ -63,6 +104,16 @@ public class PostController {
         return postService.commentPost(userId, postId, content);
     }
 
+    @DeleteMapping("/comment/delete/{commentId}")
+    public ResponseEntity<Result> deleteComment(
+            @PathVariable Long commentId,
+            HttpServletRequest request) {
+
+        String casId = getUserIdFromToken(request);
+
+        return postService.deleteComment(casId, commentId);
+    }
+
     // 获取评论
     @GetMapping("/comments/{postId}")
     public ResponseEntity<Result> getComments(
@@ -83,10 +134,6 @@ public class PostController {
         return user.getCasId();
     }
 
-    @GetMapping("/search")
-    public ResponseEntity<Result> search(@RequestParam String keyword, HttpServletRequest request) {
-        return postService.searchPosts(getUserIdFromToken(request), keyword);
-    }
 
     @GetMapping("/search/suggest")
     public ResponseEntity<Result> suggest(@RequestParam String keyword) {
@@ -97,4 +144,16 @@ public class PostController {
     public ResponseEntity<Result> history(HttpServletRequest request) {
         return Result.success(postService.getSearchHistory(getUserIdFromToken(request)), "历史记录");
     }
+
+    private String tryGetUserId(HttpServletRequest request) {
+        try {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7);
+                return JwtUtil.getClaim(token, DEFAULT_JWT_KEY).getCasId();
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
 }
