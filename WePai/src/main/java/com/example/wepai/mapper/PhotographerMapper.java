@@ -108,11 +108,26 @@ public interface PhotographerMapper extends BaseMapper<Photographer> {
             """)
     List<Map<String, Object>> getRatingRanking(@Param("limit") int limit);
 
-    @Select("SELECT u.cas_id, u.nickname, u.avatar_url, p.type, p.style,p.equipment, p.order_count " +
-            "FROM user u JOIN photographer p ON u.cas_id = p.cas_id " +
-            "WHERE u.role = 2 " +
-            // 新增 keyword 判断：匹配昵称或摄影风格
-            "AND (#{keyword} IS NULL OR u.nickname LIKE CONCAT('%',#{keyword},'%') OR p.style LIKE CONCAT('%',#{keyword},'%'))")
+    @Select("""
+            <script>
+            SELECT 
+                u.cas_id, 
+                u.nickname, 
+                u.avatar_url, 
+                p.type, 
+                p.style, 
+                p.equipment,
+                -- 实时子查询统计已完成订单量
+                (SELECT COUNT(*) FROM orders WHERE photographer_id = p.cas_id AND status IN (3, 4)) AS orderCount
+            FROM user u 
+            JOIN photographer p ON u.cas_id = p.cas_id
+            WHERE u.role = 2
+            <if test="keyword != null and keyword != ''">
+                AND (u.nickname LIKE CONCAT('%',#{keyword},'%') OR p.style LIKE CONCAT('%',#{keyword},'%'))
+            </if>
+            ORDER BY orderCount DESC
+            </script>
+            """)
     List<Map<String, Object>> getPhotographerListPaged(Page<?> page, @Param("keyword") String keyword);
 
     @Delete("DELETE FROM photographer WHERE cas_id = #{casId}")
